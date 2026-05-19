@@ -1,0 +1,36 @@
+module;
+#include <condition_variable>
+#include <memory>
+export module Types;
+
+// 数据类型
+export typedef uint8_t UInt8;
+export typedef uint16_t UInt16;
+export typedef uint32_t UInt32;
+export typedef uint64_t UInt64;
+export typedef int8_t Int8;
+export typedef int16_t Int16;
+export typedef int32_t Int32;
+export typedef int64_t Int64;
+export typedef float Float;
+export typedef double Double;
+export typedef bool Boolean;
+
+// 渲染缓冲区
+export typedef std::shared_ptr<UInt8> UInt8Buffer;
+export typedef std::shared_ptr<Float> FloatBuffer;
+
+export typedef std::mutex Mutex;
+export typedef std::condition_variable ConditionVariable;
+export typedef std::lock_guard<Mutex> LockGuard;
+export typedef std::unique_lock<Mutex> UniqueLock;
+
+export typedef std::runtime_error RuntimeError;
+
+export inline UInt8Buffer makeUInt8Buffer(const UInt32 size) {
+    return std::make_shared<UInt8>(size);
+}
+
+export inline FloatBuffer makeFloatBuffer(const UInt32 size) {
+    return std::make_shared<Float>(size);
+}
