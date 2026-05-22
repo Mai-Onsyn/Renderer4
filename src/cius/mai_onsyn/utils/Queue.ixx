@@ -1,15 +1,15 @@
 module;
 #include <mutex>
 #include <queue>
-#define Queue std::queue
-export module BlockingQueue;
+export module Queue;
 import Types;
 
 using std::move;
+using std::queue;
 
 export template<typename T>
-class BlockingQueue {
-    Queue<T> queue;
+class Queue {
+    queue<T> queue;
     Mutex mtx;
     ConditionVariable cv;
     Boolean isClosed = false;
@@ -30,21 +30,36 @@ public:
         cv.notify_all();
     }
 
+    T front() {
+        LockGuard lock(mtx);
+        return queue.front();
+    }
+
     T pop() {
         UniqueLock lock(mtx);
 
-        cv.wait(lock, [this] {
-            return !queue.empty() || isClosed;
-        });
+        // cv.wait(lock, [this] {
+        //     return !queue.empty() || isClosed;
+        // });
 
-        if (queue.empty()) {
-            throw RuntimeError("Queue closed");
-        }
+        // if (queue.empty()) {
+        //     throw RuntimeError("Queue closed");
+        // }
 
         T value = move(queue.front());
         queue.pop();
 
         return value;
+    }
+
+    UInt32 size() {
+        LockGuard lock(mtx);
+        return queue.size();
+    }
+
+    Boolean empty() {
+        LockGuard lock(mtx);
+        return queue.empty();
     }
 
     void close() {

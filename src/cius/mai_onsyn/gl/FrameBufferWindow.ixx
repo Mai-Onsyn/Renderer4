@@ -1,23 +1,50 @@
 module;
-
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-
 #include <iostream>
 #include <utility>
-#include <vector>
 #include <string>
-#include <functional>
+#include <memory> // 需要用到 unique_ptr 来做生命周期擦除
 
 export module FramebufferWindow;
+import FrameBuffer;
 
 export class FramebufferWindow {
-public:
-    using KeyCallback = std::function<void(int key, int scancode, int action, int mods)>;
-    using MousePosCallback = std::function<void(double xpos, double ypos)>;
-    using MouseButtonCallback = std::function<void(int button, int action, int mods)>;
-    using ResizeCallback = std::function<void(int width, int height)>;
+    // --- 极简类型擦除容器：用于无损存储任何带有捕获/不带捕获的 Lambda ---
+    struct KeyInvokerBase         { virtual ~KeyInvokerBase() = default;         virtual void invoke(int, int, int, int) const = 0; };
+    struct MousePosInvokerBase    { virtual ~MousePosInvokerBase() = default;    virtual void invoke(double, double) const = 0; };
+    struct MouseButtonInvokerBase { virtual ~MouseButtonInvokerBase() = default; virtual void invoke(int, int, int) const = 0; };
+    struct ResizeInvokerBase      { virtual ~ResizeInvokerBase() = default;      virtual void invoke(int, int) const = 0; };
 
+    template<typename F>
+    struct KeyInvoker final : KeyInvokerBase {
+        F lambda;
+        KeyInvoker(F&& f) : lambda(std::forward<F>(f)) {}
+        void invoke(int k, int s, int a, int m) const override { lambda(k, s, a, m); }
+    };
+
+    template<typename F>
+    struct MousePosInvoker final : MousePosInvokerBase {
+        F lambda;
+        MousePosInvoker(F&& f) : lambda(std::forward<F>(f)) {}
+        void invoke(double x, double y) const override { lambda(x, y); }
+    };
+
+    template<typename F>
+    struct MouseButtonInvoker final : MouseButtonInvokerBase {
+        F lambda;
+        MouseButtonInvoker(F&& f) : lambda(std::forward<F>(f)) {}
+        void invoke(int b, int a, int m) const override { lambda(b, a, m); }
+    };
+
+    template<typename F>
+    struct ResizeInvoker final : ResizeInvokerBase {
+        F lambda;
+        ResizeInvoker(F&& f) : lambda(std::forward<F>(f)) {}
+        void invoke(int w, int h) const override { lambda(w, h); }
+    };
+
+public:
     FramebufferWindow(const int width, const int height, std::string title)
         : m_width(width), m_height(height), m_title(std::move(title)) {}
 
@@ -61,16 +88,30 @@ public:
         return glfwWindowShouldClose(m_window);
     }
 
-    void setKeyCallback(const KeyCallback &cb) { m_keyCb = cb; }
-    void setMousePosCallback(const MousePosCallback &cb) { m_mousePosCb = cb; }
-    void setMouseButtonCallback(const MouseButtonCallback &cb) { m_mouseButtonCb = cb; }
-    void setResizeCallback(const ResizeCallback& cb) { m_resizeCb = cb; }
+    static void setVsync(bool vsync) {
+        glfwSwapInterval(vsync ? 1 : 0);
+    }
 
-    void update(const std::vector<uint8_t>& pixelData) const {
+    // --- 改为现代模板接收器：支持引用的捕获或值捕获的 Lambda ---
+    template<typename F> void setKeyCallback(F&& cb) { m_keyCb = std::make_unique<KeyInvoker<std::decay_t<F>>>(std::forward<F>(cb)); }
+    template<typename F> void setMousePosCallback(F&& cb) { m_mousePosCb = std::make_unique<MousePosInvoker<std::decay_t<F>>>(std::forward<F>(cb)); }
+    template<typename F> void setMouseButtonCallback(F&& cb) { m_mouseButtonCb = std::make_unique<MouseButtonInvoker<std::decay_t<F>>>(std::forward<F>(cb)); }
+    template<typename F> void setResizeCallback(F&& cb) { m_resizeCb = std::make_unique<ResizeInvoker<std::decay_t<F>>>(std::forward<F>(cb)); }
+
+    void update(const FrameBuffer& pixelData) {
         glfwPollEvents();
 
         glBindTexture(GL_TEXTURE_2D, m_textureID);
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_width, m_height, GL_RGBA, GL_UNSIGNED_BYTE, pixelData.data());
+
+        if (m_texWidth != pixelData.width || m_texHeight != pixelData.height) {
+            m_texWidth = pixelData.width;
+            m_texHeight = pixelData.height;
+
+            // 显式重新分配 GPU 纹理内存容量
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_texWidth, m_texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        }
+
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_width, m_height, GL_RGBA, GL_UNSIGNED_BYTE, pixelData.getBuffer());
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -85,6 +126,8 @@ public:
 private:
     int m_width;
     int m_height;
+    int m_texWidth = 0;
+    int m_texHeight = 0;
     std::string m_title;
     GLFWwindow* m_window = nullptr;
 
@@ -92,25 +135,26 @@ private:
     GLuint m_textureID = 0;
     GLuint m_shaderProgram = 0;
 
-    KeyCallback m_keyCb;
-    MousePosCallback m_mousePosCb;
-    MouseButtonCallback m_mouseButtonCb;
-    ResizeCallback m_resizeCb;
+    // 内部改用底层的虚基类智能指针存储
+    std::unique_ptr<KeyInvokerBase>         m_keyCb;
+    std::unique_ptr<MousePosInvokerBase>    m_mousePosCb;
+    std::unique_ptr<MouseButtonInvokerBase> m_mouseButtonCb;
+    std::unique_ptr<ResizeInvokerBase>      m_resizeCb;
 
     void setupCallbacks() const {
         glfwSetKeyCallback(m_window, [](GLFWwindow* w, const int k, const int s, const int a, const int m) {
             const auto* self = static_cast<FramebufferWindow*>(glfwGetWindowUserPointer(w));
-            if (self && self->m_keyCb) self->m_keyCb(k, s, a, m);
+            if (self && self->m_keyCb) self->m_keyCb->invoke(k, s, a, m);
         });
 
         glfwSetCursorPosCallback(m_window, [](GLFWwindow* w, const double x, const double y) {
             const auto* self = static_cast<FramebufferWindow*>(glfwGetWindowUserPointer(w));
-            if (self && self->m_mousePosCb) self->m_mousePosCb(x, y);
+            if (self && self->m_mousePosCb) self->m_mousePosCb->invoke(x, y);
         });
 
         glfwSetMouseButtonCallback(m_window, [](GLFWwindow* w, const int b, const int a, const int m) {
             const auto* self = static_cast<FramebufferWindow*>(glfwGetWindowUserPointer(w));
-            if (self && self->m_mouseButtonCb) self->m_mouseButtonCb(b, a, m);
+            if (self && self->m_mouseButtonCb) self->m_mouseButtonCb->invoke(b, a, m);
         });
 
         glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow* w, const int width, const int height) {
@@ -121,7 +165,7 @@ private:
                 self->m_height = height;
 
                 if (self->m_resizeCb) {
-                    self->m_resizeCb(width, height);
+                    self->m_resizeCb->invoke(width, height);
                 }
             }
         });

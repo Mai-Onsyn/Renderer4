@@ -6,10 +6,9 @@ import Types;
 using std::cout;
 using std::endl;
 
-class Log {
-    static Mutex mtx;
-    static ConditionVariable cv;
-
+Mutex mtx;
+ConditionVariable cv;
+export class Log {
 public:
     static void info(const std::string& msg) {
         {
