@@ -15,10 +15,11 @@ export typedef int64_t Int64;
 export typedef float Float;
 export typedef double Double;
 export typedef bool Boolean;
+export typedef std::string String;
 
 // 渲染缓冲区
-export typedef std::shared_ptr<UInt8> UInt8Buffer;
-export typedef std::shared_ptr<Float> FloatBuffer;
+export typedef std::unique_ptr<UInt8[]> UInt8Buffer;
+export typedef std::unique_ptr<Float[]> FloatBuffer;
 
 export typedef std::mutex Mutex;
 export typedef std::condition_variable ConditionVariable;
@@ -28,9 +29,9 @@ export typedef std::unique_lock<Mutex> UniqueLock;
 export typedef std::runtime_error RuntimeError;
 
 export inline UInt8Buffer makeUInt8Buffer(const UInt32 size) {
-    return std::make_shared<UInt8>(size);
+    return std::make_unique_for_overwrite<UInt8[]>(size);
 }
 
 export inline FloatBuffer makeFloatBuffer(const UInt32 size) {
-    return std::make_shared<Float>(size);
+    return std::make_unique_for_overwrite<Float[]>(size);
 }
