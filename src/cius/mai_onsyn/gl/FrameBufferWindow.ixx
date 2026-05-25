@@ -4,8 +4,7 @@ module;
 #include <iostream>
 #include <utility>
 #include <string>
-#include <memory> // 需要用到 unique_ptr 来做生命周期擦除
-
+#include <memory>
 export module FramebufferWindow;
 import FrameBuffer;
 
@@ -98,20 +97,20 @@ public:
     template<typename F> void setMouseButtonCallback(F&& cb) { m_mouseButtonCb = std::make_unique<MouseButtonInvoker<std::decay_t<F>>>(std::forward<F>(cb)); }
     template<typename F> void setResizeCallback(F&& cb) { m_resizeCb = std::make_unique<ResizeInvoker<std::decay_t<F>>>(std::forward<F>(cb)); }
 
-    void update(const FrameBuffer& pixelData) {
+    void update(const FrameBuffer* pixelData) {
         glfwPollEvents();
 
         glBindTexture(GL_TEXTURE_2D, m_textureID);
 
-        if (m_texWidth != pixelData.width || m_texHeight != pixelData.height) {
-            m_texWidth = pixelData.width;
-            m_texHeight = pixelData.height;
+        if (m_texWidth != pixelData->width || m_texHeight != pixelData->height) {
+            m_texWidth = pixelData->width;
+            m_texHeight = pixelData->height;
 
             // 显式重新分配 GPU 纹理内存容量
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_texWidth, m_texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
         }
 
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_width, m_height, GL_RGBA, GL_UNSIGNED_BYTE, pixelData.getBuffer());
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_width, m_height, GL_RGBA, GL_UNSIGNED_BYTE, pixelData->getBuffer());
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);

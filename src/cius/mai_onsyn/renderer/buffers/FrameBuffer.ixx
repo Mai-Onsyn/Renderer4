@@ -8,6 +8,11 @@ export class FrameBuffer {
 public:
     UInt32 width, height;
 
+    FrameBuffer() {
+        colorMap = nullptr;
+        width = 0;
+        height = 0;
+    }
     FrameBuffer(const UInt32 width, const UInt32 height): width(width), height(height) {
         colorMap = makeUInt8Buffer(width * height * 4);
     }
@@ -16,7 +21,7 @@ public:
     FrameBuffer(const FrameBuffer&) = delete;
     FrameBuffer& operator=(const FrameBuffer&) = delete;
 
-    inline UInt8* getBuffer() const {
+    [[nodiscard]] inline UInt8* getBuffer() const {
         return colorMap.get();
     }
 

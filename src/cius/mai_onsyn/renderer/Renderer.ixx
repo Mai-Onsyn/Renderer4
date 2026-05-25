@@ -7,6 +7,10 @@ import FrameBuffer;
 import Thread;
 import Logger;
 import Time;
+import TripleBuffer;
+import FontDrawer;
+import Image;
+import Color;
 
 export class Renderer {
     Thread* thread = nullptr;
@@ -17,12 +21,35 @@ export class Renderer {
     std::atomic<bool> resize_requested{false};
     std::atomic<UInt32> pending_width{0};
     std::atomic<UInt32> pending_height{0};
+protected:
+    TripleBuffer tripleBuffer;
+    Boolean resizeSignal = false;
+    Mutex mtx;
+    ConditionVariable cv;
+    FontDrawer fontDrawer{""};
+    Image* textBuffer = new Image(800, 600);
+
+    virtual void renderFrame() = 0;
 public:
-    Renderer(const UInt32 width, const UInt32 height) : main(FrameBuffer(width, height)) {}
+    UInt32 width, height;
+
+    Renderer(const UInt32 width, const UInt32 height):
+        tripleBuffer(width, height),
+        fontDrawer("assets/fonts/msyh.ttf"),
+        width(width), height(height) {}
+
     virtual ~Renderer() {
+        stop();
         delete thread;
     }
-    virtual FrameBuffer& getDisplayBuffer() = 0;
+
+    FrameBuffer* getDisplayBuffer() {
+        return tripleBuffer.getDisplayBuffer();
+    }
+
+    void releaseDisplayBuffer() {
+        tripleBuffer.releaseDisplayBuffer();
+    }
 
     void start() {
         thread = new BasicThread([this](const StopToken& st) {
@@ -55,8 +82,10 @@ public:
 
         sem_render_to_main.acquire();
 
-        main.resize(pending_width.load(std::memory_order_relaxed),
+        tripleBuffer.resize(pending_width.load(std::memory_order_relaxed),
                     pending_height.load(std::memory_order_relaxed));
+        this->width = width;
+        this->height = height;
 
         resize_requested.store(false, std::memory_order_relaxed);
         sem_main_to_render.release();
@@ -69,10 +98,4 @@ public:
     void stop() const {
         thread->interrupt();
     }
-protected:
-    FrameBuffer main;
-    Boolean resizeSignal = false;
-    Mutex mtx;
-    ConditionVariable cv;
-    virtual void renderFrame() = 0;
 };

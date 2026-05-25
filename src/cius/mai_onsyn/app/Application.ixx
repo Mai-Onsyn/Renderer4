@@ -10,6 +10,9 @@ import Logger;
 import Functions;
 import Time;
 import Queue;
+import Thread;
+
+constexpr UInt32 TARGET_WINDOW_FRAMERATE = 100;
 
 export class Application {
     FramebufferWindow* window;
@@ -17,9 +20,6 @@ export class Application {
 
     UInt32 resizeRequestWidth, resizeRequestHeight;
 public:
-    void test() {
-        Log::info("test");
-    }
     Application(const String& title, const Int32 width, const Int32 height) {
         window = new FramebufferWindow(width, height, title);
         renderer = new CPU3DRenderer(width, height);
@@ -46,9 +46,9 @@ public:
             }
         });
 
-        window->setResizeCallback([this](int newWidth, int newHeight) {
-            resizeRequestWidth = newWidth;
-            resizeRequestHeight = newHeight;
+        window->setResizeCallback([this](const int newWidth, const int newHeight) {
+            resizeRequestWidth = std::max(newWidth, 1);
+            resizeRequestHeight = std::max(newHeight, 1);
             // Log::info("Window resized to: " + toString(newWidth) + "x" + toString(newHeight));
         });
     }
@@ -61,29 +61,40 @@ public:
         return window->initialize();
     }
 
-    void run() {
+    void run() const {
         if (!window->initialize())
             throw RuntimeError("Failed to initialize window");
 
         renderer->start();
         UInt8 index = 0;
         UInt64 lastResizeTimestamp = millisTime();
+        UInt64 frameRateControlStart = millisTime();
+        UInt64 framePerMillis = 1000 / TARGET_WINDOW_FRAMERATE;
         while (!window->shouldClose()) {
             if (
-                resizeRequestWidth != renderer->getDisplayBuffer().width &&
-                resizeRequestHeight != renderer->getDisplayBuffer().height &&
+                resizeRequestWidth != renderer->width &&
+                resizeRequestHeight != renderer->height &&
                 millisTime() - lastResizeTimestamp > 1000
-                ) {
+            ) {
                 renderer->resize(resizeRequestWidth, resizeRequestHeight);
                 lastResizeTimestamp = millisTime();
                 Log::info("Renderer resized to: " + toString(resizeRequestWidth) + "x" + toString(resizeRequestHeight));
             }
 
-            window->update(renderer->getDisplayBuffer());
+            if (const auto buffer = renderer->getDisplayBuffer(); buffer != nullptr) {
+                if (resizeRequestWidth == buffer->width && resizeRequestHeight == buffer->height) window->update(buffer);
+                renderer->releaseDisplayBuffer();
+            }
 
             if (index++ % 128 == 0) {
                 Log::info("Renderer: " + toString(renderer->getFPS()) + " FPS");
             }
+
+            UInt64 elapsed = millisTime() - frameRateControlStart;
+            if (elapsed < framePerMillis) {
+                Thread::sleep(framePerMillis - elapsed);
+            }
+            frameRateControlStart = millisTime();
         }
 
         renderer->stop();

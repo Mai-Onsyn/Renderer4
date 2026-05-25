@@ -15,6 +15,10 @@ public:
     virtual void join() = 0;
     virtual void interrupt() = 0;
     [[nodiscard]] virtual bool joinable() const = 0;
+
+    static void sleep(const UInt64 ms) {
+        sleep_for(std::chrono::milliseconds(ms));
+    }
 };
 
 export template<typename F>
@@ -54,9 +58,5 @@ public:
 
     [[nodiscard]] bool joinable() const override {
         return t.joinable();
-    }
-
-    static void sleep(const UInt64 ms) {
-        sleep_for(std::chrono::milliseconds(ms));
     }
 };
