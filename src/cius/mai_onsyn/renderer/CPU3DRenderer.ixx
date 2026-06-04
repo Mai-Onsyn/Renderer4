@@ -60,37 +60,12 @@ public:
             }
         }
 
-        drawText(format("FPS = %.2f", getFPS()), 0, 0, frameBuffer->getBuffer(), textBuffer);
-        drawText(format("Resolution = %d*%d", width, height), 0, textBuffer->height, frameBuffer->getBuffer(), textBuffer);
+        drawText(format("FPS = %.2f", getFPS()), 0, 0, frameBuffer->getBuffer());
+        drawText(format("Resolution = %d*%d", width, height), 0, 27, frameBuffer->getBuffer());
         tripleBuffer.commit();
     }
 
-    void drawText(const String& text, const UInt32 ox, const UInt32 oy, UInt8* screen, Image* buffer) {
-        fontDrawer.drawText(text, Color{255, 255, 255, 255}, 27.0, buffer);
-
-        const UInt8* imagePtr = buffer->getBuffer();
-        for (UInt32 y = 0; y < buffer->height; y++) {
-            if (y + oy >= height) break;
-            const UInt32 offestYl = (y + oy) * width;
-            const UInt32 yl = y * buffer->width;
-            for (UInt32 x = 0; x < buffer->width; x++) {
-                if (x + ox >= width) break;
-
-                const UInt32 screenOffset = (x + ox + offestYl) << 2;
-                const UInt32 imageOffset = (x + yl) << 2;
-                if (const UInt8 alpha = imagePtr[imageOffset + 3]; alpha == 255) {
-                    screen[screenOffset + 0] = imagePtr[imageOffset + 0];
-                    screen[screenOffset + 1] = imagePtr[imageOffset + 1];
-                    screen[screenOffset + 2] = imagePtr[imageOffset + 2];
-                    screen[screenOffset + 3] = 255;
-                }
-                else if (alpha > 0) {
-                    screen[screenOffset + 0] = (screen[screenOffset + 0] * (255 - alpha) + imagePtr[imageOffset + 0] * alpha) >> 8;
-                    screen[screenOffset + 1] = (screen[screenOffset + 1] * (255 - alpha) + imagePtr[imageOffset + 1] * alpha) >> 8;
-                    screen[screenOffset + 2] = (screen[screenOffset + 2] * (255 - alpha) + imagePtr[imageOffset + 2] * alpha) >> 8;
-                    screen[screenOffset + 3] = 255;
-                }
-            }
-        }
+    void drawText(const String& text, const UInt32 ox, const UInt32 oy, UInt8* screen) {
+        fontDrawer.drawText(text, ox, oy, Color{255, 255, 255, 255}, 27.0, screen, width, height);
     }
 };
