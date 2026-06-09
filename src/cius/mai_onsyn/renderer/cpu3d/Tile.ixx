@@ -1,4 +1,5 @@
 module;
+#include <algorithm>
 #include <cmath>
 export module Tile;
 import Types;
@@ -29,21 +30,44 @@ public:
     static List<Tile> divideScreen(const Int32 screenWidth, const Int32 screenHeight, const Int32 count) {
         List<Tile> tiles;
         List<Pair<Int32, Int32>> factors = findAllFactors(count);
-        Float aspectRatio = static_cast<Float>(screenWidth) / static_cast<Float>(screenHeight);
+        const Float aspectRatio = static_cast<Float>(screenWidth) / static_cast<Float>(screenHeight);
 
         Int32 mostSimilarIndex = -1;
         Float mostSimilarDistance = 99999.0;
         Int32 index = 0;
         for (const auto& [row, col] : factors) {
-            Float distance = abs(aspectRatio - static_cast<Float>(row) / static_cast<Float>(col));
+            Float currentRatio = static_cast<Float>(col) / static_cast<Float>(row);
+            Float distance = fabs(aspectRatio - currentRatio);
             if (distance < mostSimilarDistance) {
+                mostSimilarDistance = distance;
+                mostSimilarIndex = index;
+            }
+            Log::debug(format("row %.4f, colum %.4f", row, col));
+
+            if (fabs(1 / distance - currentRatio) < 1e-4 && currentRatio < 1) {
                 mostSimilarDistance = distance;
                 mostSimilarIndex = index;
             }
             index++;
         }
+        Int32 rows = factors[mostSimilarIndex].first;
+        Int32 cols = factors[mostSimilarIndex].second;
 
-        Log::debug(format("Most similar aspect ratio: %d:%d", factors[mostSimilarIndex].first, factors[mostSimilarIndex].second));
+        Int32 baseTileWidth = screenWidth / cols;
+        Int32 baseTileHeight = screenHeight / rows;
+        for (Int32 r = 0; r < rows; ++r) {
+            for (Int32 c = 0; c < cols; ++c) {
+                Int32 x = c * baseTileWidth;
+                Int32 y = r * baseTileHeight;
+
+                Int32 width  = (c == cols - 1) ? (screenWidth - x)  : baseTileWidth;
+                Int32 height = (r == rows - 1) ? (screenHeight - y) : baseTileHeight;
+
+                if (width > 0 && height > 0) {
+                    tiles.push_back(Tile(x, y, width, height));
+                }
+            }
+        }
 
         return tiles;
     }
