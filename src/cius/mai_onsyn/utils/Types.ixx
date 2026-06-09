@@ -1,6 +1,8 @@
 module;
 #include <condition_variable>
+#include <map>
 #include <memory>
+#include <vector>
 export module Types;
 
 // 数据类型
@@ -35,3 +37,7 @@ export inline UInt8Buffer makeUInt8Buffer(const UInt32 size) {
 export inline FloatBuffer makeFloatBuffer(const UInt32 size) {
     return std::make_unique_for_overwrite<Float[]>(size);
 }
+
+export template<typename T> using List = std::vector<T>;
+export template<typename K, typename V> using Map = std::map<K, V>;
+export template<typename K, typename V> using Pair = std::pair<K, V>;

@@ -32,6 +32,34 @@ export struct Vector2D {
     friend ostream& operator<<(ostream & lhs, const Vector2D & pos);
 };
 
+export struct VectorInt2D {
+    Int64 x, y;
+
+    VectorInt2D(Int64 x, Int64 y);
+    explicit operator Vector2D() const;
+
+    inline VectorInt2D operator+(const VectorInt2D& other) const;
+    inline VectorInt2D operator-(const VectorInt2D& v) const;
+    inline VectorInt2D operator*(const VectorInt2D& v) const;
+    inline VectorInt2D operator*(Float scalar) const;
+    inline VectorInt2D operator/(const VectorInt2D& v) const;
+    inline VectorInt2D operator/(Float scalar) const;
+    inline VectorInt2D& operator+=(const VectorInt2D& v);
+    inline VectorInt2D& operator-=(const VectorInt2D& v);
+    inline VectorInt2D& operator*=(const VectorInt2D& v);
+    inline VectorInt2D& operator*=(Float scalar);
+    inline VectorInt2D& operator/=(const VectorInt2D& v);
+    inline VectorInt2D& operator/=(Float scalar);
+    inline Boolean operator==(const VectorInt2D &v) const;
+
+    [[nodiscard]] inline Int64 dot(const VectorInt2D& v) const;
+    [[nodiscard]] inline Int64 length() const;
+    [[nodiscard]] inline VectorInt2D normalize() const;
+
+    [[nodiscard]] inline String toString() const;
+    friend ostream& operator<<(ostream & lhs, const VectorInt2D & pos);
+};
+
 export struct Vector3D {
     Float x, y, z;
 

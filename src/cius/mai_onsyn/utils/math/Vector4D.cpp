@@ -12,7 +12,7 @@ Vector4D::Vector4D(const Float x, const Float y, const Float z, const Float w) :
 Vector4D::Vector4D(const Vector3D& v3, const Float w) : x(v3.x), y(v3.y), z(v3.z), w(w) {}
 
 Vector4D::operator Vector3D() const {
-    return Vector3D(x, y, z);
+    return {x, y, z};
 }
 
 Vector4D Vector4D::operator+(const Vector4D& other) const {

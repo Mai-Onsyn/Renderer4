@@ -12,12 +12,12 @@ import Time;
 
 export class CPU3DRenderer final : public Renderer {
 public:
-    CPU3DRenderer(const UInt32 width, const UInt32 height) : Renderer(width, height) {}
+    CPU3DRenderer(const Int32 width, const Int32 height) : Renderer(width, height) {}
 
     const UInt64 CYCLE_DURATION_MS = 5000;
     void renderFrame() override {
-        UInt32 h = height;
-        UInt32 w = width;
+        Int32 h = height;
+        Int32 w = width;
 
         UInt64 currentTime = millisTime();
         Float timeFactor = static_cast<Float>(currentTime % CYCLE_DURATION_MS) / static_cast<Float>(CYCLE_DURATION_MS);
@@ -27,10 +27,10 @@ public:
 
         Float invW = 1.0f / static_cast<Float>(w);
         Float invH = 1.0f / static_cast<Float>(h);
-        for (UInt32 y = 0; y < h; ++y) {
+        for (Int32 y = 0; y < h; ++y) {
             const Float gradY = static_cast<Float>(y) * invH;
 
-            for (UInt32 x = 0; x < w; ++x) {
+            for (Int32 x = 0; x < w; ++x) {
                 const Float gradX = static_cast<Float>(x) * invW;
 
                 Float hue = timeFactor + gradX + gradY;
@@ -65,7 +65,7 @@ public:
         tripleBuffer.commit();
     }
 
-    void drawText(const String& text, const UInt32 ox, const UInt32 oy, UInt8* screen) {
+    void drawText(const String& text, const Int32 ox, const Int32 oy, UInt8* screen) {
         fontDrawer.drawText(text, ox, oy, Color{255, 255, 255, 255}, 27.0, screen, width, height);
     }
 };

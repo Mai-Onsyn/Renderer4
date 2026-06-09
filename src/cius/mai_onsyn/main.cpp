@@ -1,13 +1,19 @@
+#include <iostream>
+
 import Application;
 import Time;
 import Types;
+import Tile;
+import MathUtil;
 
 int main() {
-    const int width = 800;
-    const int height = 600;
+    // Application app("DisplayWindow", 800, 600);
+    // app.run();
+    List<Tile> tiles = Tile::divideScreen(1920, 1080, 7);
 
-    Application app("DisplayWindow", width, height);
-    app.run();
+    for (const auto& tile : tiles) {
+        std::cout << tile.toString() << std::endl;
+    }
 
     return 0;
 }

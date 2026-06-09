@@ -19,8 +19,8 @@ export class Renderer {
     std::binary_semaphore sem_main_to_render{0}; // 主线程通知渲染线程
     std::binary_semaphore sem_render_to_main{0}; // 渲染线程通知主线程
     std::atomic<bool> resize_requested{false};
-    std::atomic<UInt32> pending_width{0};
-    std::atomic<UInt32> pending_height{0};
+    std::atomic<Int32> pending_width{0};
+    std::atomic<Int32> pending_height{0};
 protected:
     TripleBuffer tripleBuffer;
     Boolean resizeSignal = false;
@@ -31,9 +31,9 @@ protected:
 
     virtual void renderFrame() = 0;
 public:
-    UInt32 width, height;
+    Int32 width, height;
 
-    Renderer(const UInt32 width, const UInt32 height):
+    Renderer(const Int32 width, const Int32 height):
         tripleBuffer(width, height),
         fontDrawer("assets/fonts/msyh.ttf"),
         width(width), height(height) {}
@@ -75,7 +75,7 @@ public:
         thread->start();
     }
 
-    void resize(const UInt32 width, const UInt32 height) {
+    void resize(const Int32 width, const Int32 height) {
         pending_width.store(width, std::memory_order_relaxed);
         pending_height.store(height, std::memory_order_relaxed);
         resize_requested.store(true, std::memory_order_release);

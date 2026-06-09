@@ -12,7 +12,7 @@ Vector3D::Vector3D(const Float x, const Float y, const Float z) : x(x), y(y), z(
 Vector3D::Vector3D(const Vector2D& v2, const Float z) : x(v2.x), y(v2.y), z(z) {}
 
 Vector3D::operator Vector2D() const {
-    return Vector2D(x, y);
+    return {x, y};
 }
 
 Vector3D Vector3D::operator+(const Vector3D& other) const {
