@@ -8,6 +8,15 @@ import Types;
 using namespace std;
 
 template<typename T>
+auto toPrintable(const T& value) {
+    if constexpr (std::is_same_v<T, char> || std::is_same_v<T, unsigned char> || std::is_same_v<T, signed char>) {
+        return static_cast<int>(value);
+    } else {
+        return value;
+    }
+}
+
+template<typename T>
 void append(stringstream& ss, const char* fmt, Int32& offset, const T& value) {
     while (fmt[offset] != '\0') {
         if (fmt[offset] == '%') {
@@ -27,7 +36,7 @@ void append(stringstream& ss, const char* fmt, Int32& offset, const T& value) {
                 ss << value;
                 break;
             case 'd':
-                ss << dec << value;
+                ss << dec << toPrintable(value);
                 ss.unsetf(ios::fixed);
                 break;
             case 'b':

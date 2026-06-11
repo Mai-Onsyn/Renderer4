@@ -1,10 +1,15 @@
 module;
+#include <string>
 export module Color;
 import Types;
+import Format;
 
 export struct Color {
     UInt8 r, g, b, a = 255;
 
+    String toString() const {
+        return format("Color{%d, %d, %d, %d}", r, g, b, a);
+    }
     // inline static const Color Red{255, 0, 0};
     // inline static const Color Green{0, 255, 0};
     // inline static const Color Blue{0, 0, 255};

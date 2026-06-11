@@ -31,6 +31,13 @@ target_sources(${PROJECT_NAME} PUBLIC
         FILES ${MODULES}
 )
 
+if(MINGW)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+    add_link_options(-static-libgcc -static-libstdc++)
+
+    # add_link_options(-static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lpthread)
+endif()
+
 
 file(GLOB_RECURSE ASSETS_FILES
         CONFIGURE_DEPENDS

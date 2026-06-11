@@ -11,18 +11,23 @@ import Functions;
 import Time;
 import Queue;
 import Thread;
+import Scene;
 
 constexpr UInt32 TARGET_WINDOW_FRAMERATE = 100;
 
 export class Application {
-    FramebufferWindow* window;
-    Renderer* renderer;
+    UniquePtr<FramebufferWindow> window;
+    UniquePtr<Renderer> renderer;
+    UniquePtr<Scene> scene;
 
-    UInt32 resizeRequestWidth, resizeRequestHeight;
+    Queue<SceneOperation*> sceneOperations{};
+
+    Int32 resizeRequestWidth, resizeRequestHeight;
 public:
     Application(const String& title, const Int32 width, const Int32 height) {
-        window = new FramebufferWindow(width, height, title);
-        renderer = new CPU3DRenderer(width, height);
+        window = make_unique<FramebufferWindow>(width, height, title);
+        renderer = make_unique<CPU3DRenderer>(width, height);
+        scene = make_unique<Scene>("Test Scene");
         resizeRequestWidth = width;
         resizeRequestHeight = height;
         FramebufferWindow::setVsync(true);
@@ -52,16 +57,12 @@ public:
             // Log::info("Window resized to: " + toString(newWidth) + "x" + toString(newHeight));
         });
     }
-    ~Application() {
-        delete window;
-        delete renderer;
-    }
 
     [[nodiscard]] bool initialize() const {
         return window->initialize();
     }
 
-    void run() const {
+    void run() {
         if (!window->initialize())
             throw RuntimeError("Failed to initialize window");
 
@@ -71,6 +72,7 @@ public:
         UInt64 frameRateControlStart = millisTime();
         UInt64 framePerMillis = 1000 / TARGET_WINDOW_FRAMERATE;
         while (!window->shouldClose()) {
+            // 窗口大小改变
             if (
                 resizeRequestWidth != renderer->width &&
                 resizeRequestHeight != renderer->height &&
@@ -81,16 +83,26 @@ public:
                 Log::info("Renderer resized to: " + toString(resizeRequestWidth) + "x" + toString(resizeRequestHeight));
             }
 
+            // 场景更新
+            while (!sceneOperations.empty()) {
+                SceneOperation* operation = sceneOperations.pop();
+                operation->invoke(scene.get());
+                delete operation;
+            }
+
+            // 渲染器渲染
             if (const auto buffer = renderer->getDisplayBuffer(); buffer != nullptr) {
                 if (resizeRequestWidth == buffer->width && resizeRequestHeight == buffer->height) window->update(buffer);
                 renderer->releaseDisplayBuffer();
             }
 
+            // 渲染器帧率显示
             if (index++ % 128 == 0) {
                 Log::info("Renderer: " + toString(renderer->getFPS()) + " FPS");
             }
 
-            UInt64 elapsed = millisTime() - frameRateControlStart;
+            // 窗口循环速度控制
+            const UInt64 elapsed = millisTime() - frameRateControlStart;
             if (elapsed < framePerMillis) {
                 Thread::sleep(framePerMillis - elapsed);
             }
@@ -98,5 +110,9 @@ public:
         }
 
         renderer->stop();
+    }
+
+    void addSceneUpdate(SceneOperation* op) {
+        sceneOperations.push(op);
     }
 };

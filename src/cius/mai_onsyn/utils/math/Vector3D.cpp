@@ -108,7 +108,7 @@ Vector3D Vector3D::normalize() const {
 }
 
 String Vector3D::toString() const {
-    return format("({:.5f}, {:.5f}, {:.5f})", x, y, z);
+    return format("(%.5f, %.5f, %.5f)", x, y, z);
 }
 
 ostream& operator<<(ostream& lhs, const Vector3D& v) {

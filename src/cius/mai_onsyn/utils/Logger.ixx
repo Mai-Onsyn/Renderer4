@@ -40,9 +40,9 @@ export class Log {
             cout << formatTimeMillis(millisTime(), "[HH:mm:ss] [")
                 << toString(level)
                 << "] ";
-            String formatted = format(msg, args...);
+            const String formatted = format(msg, args...);
             cout << formatted;
-            cout << '\n';
+            cout << "\n";
         }
         cv.notify_all();
     }

@@ -16,11 +16,11 @@ export class Renderer {
     Thread* thread = nullptr;
     Float fps = 0;
 
-    std::binary_semaphore sem_main_to_render{0}; // 主线程通知渲染线程
-    std::binary_semaphore sem_render_to_main{0}; // 渲染线程通知主线程
-    std::atomic<bool> resize_requested{false};
-    std::atomic<Int32> pending_width{0};
-    std::atomic<Int32> pending_height{0};
+    Semaphore sem_main_to_render{0}; // 主线程通知渲染线程
+    Semaphore sem_render_to_main{0}; // 渲染线程通知主线程
+    Atomic<bool> resize_requested{false};
+    Atomic<Int32> pending_width{0};
+    Atomic<Int32> pending_height{0};
 protected:
     TripleBuffer tripleBuffer;
     UniquePtr<Float[]> depthBuffer;
@@ -101,6 +101,9 @@ public:
     }
 
     void stop() const {
-        thread->interrupt();
+        if (thread) {
+            thread->interrupt();
+            thread->join();
+        }
     }
 };

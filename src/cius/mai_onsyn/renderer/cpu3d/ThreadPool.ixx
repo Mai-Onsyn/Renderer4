@@ -109,7 +109,6 @@ public:
         }
     }
 
-    // 接口更改为接收 UniquePtr<Runnable>*，完全避免底层指针复制和转移
     void submit(UniquePtr<Runnable>* tasks, const Int32 totalTasks, const Boolean wait = true) {
         if (!tasks || totalTasks == 0) return;
 
