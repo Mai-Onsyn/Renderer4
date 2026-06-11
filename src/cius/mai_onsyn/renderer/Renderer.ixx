@@ -23,6 +23,7 @@ export class Renderer {
     std::atomic<Int32> pending_height{0};
 protected:
     TripleBuffer tripleBuffer;
+    UniquePtr<Float[]> depthBuffer;
     Boolean resizeSignal = false;
     Mutex mtx;
     ConditionVariable cv;
@@ -30,11 +31,13 @@ protected:
     Image* textBuffer = new Image(800, 600);
 
     virtual void renderFrame() = 0;
+    virtual void onResize(Int32 width, Int32 height) = 0;
 public:
     Int32 width, height;
 
     Renderer(const Int32 width, const Int32 height):
         tripleBuffer(width, height),
+        depthBuffer(makeFloatBuffer(width * height)),
         fontDrawer("assets/fonts/msyh.ttf"),
         width(width), height(height) {}
 
@@ -84,8 +87,10 @@ public:
 
         tripleBuffer.resize(pending_width.load(std::memory_order_relaxed),
                     pending_height.load(std::memory_order_relaxed));
+        depthBuffer.reset(new Float[width * height]);
         this->width = width;
         this->height = height;
+        onResize(width, height);
 
         resize_requested.store(false, std::memory_order_relaxed);
         sem_main_to_render.release();

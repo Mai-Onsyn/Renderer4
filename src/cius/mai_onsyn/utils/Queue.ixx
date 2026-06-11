@@ -30,22 +30,13 @@ public:
         cv.notify_all();
     }
 
-    T front() {
+    const T& front() {
         LockGuard lock(mtx);
         return queue.front();
     }
 
     T pop() {
         UniqueLock lock(mtx);
-
-        // cv.wait(lock, [this] {
-        //     return !queue.empty() || isClosed;
-        // });
-
-        // if (queue.empty()) {
-        //     throw RuntimeError("Queue closed");
-        // }
-
         T value = move(queue.front());
         queue.pop();
 

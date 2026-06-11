@@ -8,6 +8,7 @@ import Types;
 import Image;
 import Color;
 import Time;
+import Logger;
 
 export class FontDrawer {
     UInt8Buffer fontDataBuffer;
@@ -16,7 +17,9 @@ public:
     explicit FontDrawer(const String &path) {
         FILE* file = fopen(path.c_str(), "rb");
         if (!file) {
-            throw std::runtime_error("Failed to open font file: " + path);
+            // throw std::runtime_error("Failed to open font file: " + path);
+            Log::error("Failed to open font file: %s", path);
+            return;
         }
 
         fseek(file, 0, SEEK_END);
@@ -28,19 +31,25 @@ public:
         fclose(file);
 
         if (readBytes != static_cast<size_t>(fileSize)) {
-            throw std::runtime_error("Failed to read font file: " + path);
+            // throw std::runtime_error("Failed to read font file: " + path);
+            Log::error("Failed to read font file: %s", path);
+            return;
         }
 
         // --- 核心修改部分 ---
         // 1. 获取 TTC 文件中第一个字体的偏移量（如果传入的是普通 ttf，该函数也会安全返回 0）
         Int32 fontOffset = stbtt_GetFontOffsetForIndex(fontDataBuffer.get(), 0);
         if (fontOffset < 0) {
-            throw std::runtime_error("Failed to find font offset inside collection: " + path);
+            // throw std::runtime_error("Failed to find font offset inside collection: " + path);
+            Log::error("Failed to find font offset inside collection: %s", path);
+            return;
         }
 
         // 2. 传入计算好的偏移量进行初始化
         if (!stbtt_InitFont(&fontInfo, fontDataBuffer.get(), fontOffset)) {
-            throw std::runtime_error("Failed to initialize font: " + path);
+            // throw std::runtime_error("Failed to initialize font: " + path);
+            Log::error("Failed to initialize font: %s", path);
+            return;
         }
     }
     ~FontDrawer() = default;

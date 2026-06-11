@@ -8,6 +8,12 @@ using std::jthread;
 using std::this_thread::sleep_for;
 export typedef std::stop_token StopToken;
 
+export class Runnable {
+public:
+    virtual ~Runnable() = default;
+    virtual void run() = 0;
+};
+
 export class Thread {
 public:
     virtual ~Thread() = default;
@@ -18,6 +24,10 @@ public:
 
     static void sleep(const UInt64 ms) {
         sleep_for(std::chrono::milliseconds(ms));
+    }
+
+    static std::thread::id getID() {
+        return std::this_thread::get_id();
     }
 };
 

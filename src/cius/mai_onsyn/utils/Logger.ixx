@@ -3,6 +3,7 @@ module;
 export module Logger;
 import Types;
 import Time;
+import Format;
 
 using std::cout;
 using std::endl;
@@ -32,24 +33,37 @@ String toString(const LogLevel level) {
 }
 
 export class Log {
-    static void log(const String& msg, const LogLevel level) {
+    template<typename... Args>
+    static void log(const String& msg, const LogLevel level, Args&&... args) {
         {
             LockGuard lock(mtx);
-            cout << formatTimeMillis(millisTime(), "[HH:mm:ss] [") << toString(level) << "] " << msg << endl;
+            cout << formatTimeMillis(millisTime(), "[HH:mm:ss] [")
+                << toString(level)
+                << "] ";
+            String formatted = format(msg, args...);
+            cout << formatted;
+            cout << '\n';
         }
         cv.notify_all();
     }
 public:
-    static void debug(const String& msg) {
-        log(msg, LogLevel::DEBUG);
+    template<typename... Args>
+    static void debug(const String& msg, Args&&... args) {
+        log(msg, LogLevel::DEBUG, args...);
     }
-    static void info(const String& msg) {
-        log(msg, LogLevel::INFO);
+
+    template<typename... Args>
+    static void info(const String& msg, Args&&... args) {
+        log(msg, LogLevel::INFO, args...);
     }
-    static void warn(const String& msg) {
-        log(msg, LogLevel::WARN);
+
+    template<typename... Args>
+    static void warn(const String& msg, Args&&... args) {
+        log(msg, LogLevel::WARN, args...);
     }
-    static void error(const String& msg) {
-        log(msg, LogLevel::ERROR);
+
+    template<typename... Args>
+    static void error(const String& msg, Args&&... args) {
+        log(msg, LogLevel::ERROR, args...);
     }
 };

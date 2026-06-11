@@ -1,5 +1,6 @@
 module;
 #include <condition_variable>
+#include <latch>
 #include <map>
 #include <memory>
 #include <vector>
@@ -27,6 +28,8 @@ export typedef std::mutex Mutex;
 export typedef std::condition_variable ConditionVariable;
 export typedef std::lock_guard<Mutex> LockGuard;
 export typedef std::unique_lock<Mutex> UniqueLock;
+export typedef std::binary_semaphore Semaphore;
+export typedef std::latch Latch;
 
 export typedef std::runtime_error RuntimeError;
 
@@ -39,5 +42,11 @@ export inline FloatBuffer makeFloatBuffer(const UInt32 size) {
 }
 
 export template<typename T> using List = std::vector<T>;
+export template<typename T> using Atomic = std::atomic<T>;
 export template<typename K, typename V> using Map = std::map<K, V>;
 export template<typename K, typename V> using Pair = std::pair<K, V>;
+export template<typename T> using UniquePtr = std::unique_ptr<T>;
+export template<typename T> using SharedPtr = std::shared_ptr<T>;
+
+export using std::make_unique;
+export using std::make_unique_for_overwrite;

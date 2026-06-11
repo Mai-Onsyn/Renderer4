@@ -29,20 +29,20 @@ public:
 
         window->setKeyCallback([this](int key, int scancode, int action, int mods) {
             if (action == 1) { // GLFW_PRESS
-                Log::info("Key " + toString(key) + " Pressed");
+                Log::info("Key %d Pressed", key);
             }
         });
 
         window->setMousePosCallback([](double xpos, double ypos) {
-            Log::info("Mouse Position: X=" + toString(static_cast<Int32>(xpos)) + ", Y=" + toString(static_cast<Int32>(ypos)));
+            Log::info("Mouse Position: X=%d, Y=%d", xpos, ypos);
         });
 
         window->setMouseButtonCallback([](int button, int action, int mods) {
             if (action == 1) {
-                Log::info("Mouse Button Pressed: " + toString(button));
+                Log::info("Mouse Button Pressed: %d", button);
             }
             if (action == 0) {
-                Log::info("Mouse Button Released: " + toString(button));
+                Log::info("Mouse Button Released: %d", button);
             }
         });
 
