@@ -5,7 +5,6 @@ module;
 export module Scene;
 import Types;
 import RenderPackage;
-import RenderPackage;
 import Mesh;
 import Light;
 import Camera;
@@ -42,6 +41,8 @@ public:
             }
         }
     }
+
+    void createSnapShot(SceneSnapShot* reciever)
 
     String toString() const {
         std::stringstream ss;
