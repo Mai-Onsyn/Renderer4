@@ -23,7 +23,7 @@ public:
 
     [[nodiscard]] String getName() const { return name; }
 
-    void addEntity(Entity mesh) { entities.push_back(move(mesh)); }
+    void addEntity(Entity mesh) { entities.emplace_back(move(mesh)); }
 
     void removeEntity(const String& meshName) {
         for (UInt32 i = 0; i < entities.size(); i++) {
@@ -33,7 +33,7 @@ public:
         }
     }
 
-    void addLight(Light light) { lights.push_back(move(light)); }
+    void addLight(Light light) { lights.emplace_back(move(light)); }
 
     void removeLight(const String& lightName) {
         for (UInt32 i = 0; i < lights.size(); i++) {
@@ -41,6 +41,14 @@ public:
                 lights.erase(lights.begin() + i);
             }
         }
+    }
+
+    [[nodiscard]] SceneSnapShot* createSnapShot() const {
+        auto* snapShot = new SceneSnapShot;
+        snapShot->lights = lights;
+        snapShot->ambientLight = {255, 255, 255, 255};
+        // snapShot->viewMatrix = camera.
+        return snapShot;
     }
 
     String toString() const {

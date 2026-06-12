@@ -11,6 +11,7 @@ import TripleBuffer;
 import FontDrawer;
 import Image;
 import Color;
+import RenderPackage;
 
 export class Renderer {
     Thread* thread = nullptr;
@@ -24,6 +25,7 @@ export class Renderer {
 protected:
     TripleBuffer tripleBuffer;
     UniquePtr<Float[]> depthBuffer;
+    RenderSnapShotDoubleBuffer snapShotBuffer;
     Boolean resizeSignal = false;
     Mutex mtx;
     ConditionVariable cv;
@@ -105,5 +107,9 @@ public:
             thread->interrupt();
             thread->join();
         }
+    }
+
+    void submitSnapShot(SceneSnapShot* snapShot) {
+        snapShotBuffer.submit(snapShot);
     }
 };

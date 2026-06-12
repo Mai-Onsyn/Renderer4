@@ -8,6 +8,7 @@ using std::ostream;
 export struct Vector2D {
     Float x, y;
 
+    Vector2D() = default;
     Vector2D(Float x, Float y);
 
     inline Vector2D operator+(const Vector2D& other) const;
@@ -35,6 +36,7 @@ export struct Vector2D {
 export struct VectorInt2D {
     Int64 x, y;
 
+    VectorInt2D() = default;
     VectorInt2D(Int64 x, Int64 y);
     explicit operator Vector2D() const;
 
@@ -63,6 +65,7 @@ export struct VectorInt2D {
 export struct Vector3D {
     Float x, y, z;
 
+    Vector3D() = default;
     Vector3D(Float x, Float y, Float z);
     explicit Vector3D(const Vector2D& v2, Float z = 1.0f);
     explicit operator Vector2D() const;
@@ -92,6 +95,7 @@ export struct Vector3D {
 export struct Vector4D {
     Float x, y, z, w;
 
+    Vector4D() = default;
     Vector4D(Float x, Float y, Float z, Float w);
     explicit Vector4D(const Vector3D& v3, Float w = 1.0f);
     explicit operator Vector3D() const;

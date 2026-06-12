@@ -90,6 +90,9 @@ public:
                 delete operation;
             }
 
+            // 场景快照提交
+            renderer->submitSnapShot(scene->createSnapShot());
+
             // 渲染器渲染
             if (const auto buffer = renderer->getDisplayBuffer(); buffer != nullptr) {
                 if (resizeRequestWidth == buffer->width && resizeRequestHeight == buffer->height) window->update(buffer);
