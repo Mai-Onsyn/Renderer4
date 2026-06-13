@@ -22,14 +22,16 @@ export class Application {
 
     Queue<SceneOperation*> sceneOperations{};
 
-    Int32 resizeRequestWidth, resizeRequestHeight;
+    Int32 windowWidth, windowHeight;
+    Queue<Pair<Int32, Int32>> resizeRequests{};
+    UInt64 lastResizeTimestamp = millisTime();
 public:
     Application(const String& title, const Int32 width, const Int32 height) {
         window = make_unique<FramebufferWindow>(width, height, title);
         renderer = make_unique<CPU3DRenderer>(width, height);
         scene = make_unique<Scene>("Test Scene");
-        resizeRequestWidth = width;
-        resizeRequestHeight = height;
+        windowWidth = width;
+        windowHeight = height;
         FramebufferWindow::setVsync(true);
 
         window->setKeyCallback([this](int key, int scancode, int action, int mods) {
@@ -52,8 +54,10 @@ public:
         });
 
         window->setResizeCallback([this](const int newWidth, const int newHeight) {
-            resizeRequestWidth = std::max(newWidth, 1);
-            resizeRequestHeight = std::max(newHeight, 1);
+            resizeRequests.push({std::max(newWidth, 1), std::max(newHeight, 1)});
+            lastResizeTimestamp = millisTime();
+            // resizeRequestWidth = std::max(newWidth, 1);
+            // resizeRequestHeight = std::max(newHeight, 1);
             // Log::info("Window resized to: " + toString(newWidth) + "x" + toString(newHeight));
         });
     }
@@ -68,19 +72,19 @@ public:
 
         renderer->start();
         UInt8 index = 0;
-        UInt64 lastResizeTimestamp = millisTime();
         UInt64 frameRateControlStart = millisTime();
         UInt64 framePerMillis = 1000 / TARGET_WINDOW_FRAMERATE;
         while (!window->shouldClose()) {
             // 窗口大小改变
-            if (
-                resizeRequestWidth != renderer->width &&
-                resizeRequestHeight != renderer->height &&
-                millisTime() - lastResizeTimestamp > 1000
-            ) {
-                renderer->resize(resizeRequestWidth, resizeRequestHeight);
-                lastResizeTimestamp = millisTime();
-                Log::info("Renderer resized to: " + toString(resizeRequestWidth) + "x" + toString(resizeRequestHeight));
+            if (!resizeRequests.empty() && millisTime() - lastResizeTimestamp > 1000) {
+                Pair<Int32, Int32> resizeRequest = resizeRequests.pop();
+                while (!resizeRequests.empty()) {
+                    resizeRequest = resizeRequests.pop();
+                }
+                windowWidth = resizeRequest.first;
+                windowHeight = resizeRequest.second;
+                renderer->resize(windowWidth, windowHeight);
+                Log::info("Renderer resized to: %d*%d", windowWidth, windowHeight);
             }
 
             // 场景更新
@@ -91,11 +95,11 @@ public:
             }
 
             // 场景快照提交
-            renderer->submitSnapShot(scene->createSnapShot(resizeRequestWidth, resizeRequestHeight));
+            renderer->submitSnapShot(scene->createSnapShot(windowWidth, windowHeight));
 
             // 渲染器渲染
             if (const auto buffer = renderer->getDisplayBuffer(); buffer != nullptr) {
-                if (resizeRequestWidth == buffer->width && resizeRequestHeight == buffer->height) window->update(buffer);
+                window->update(buffer);
                 renderer->releaseDisplayBuffer();
             }
 

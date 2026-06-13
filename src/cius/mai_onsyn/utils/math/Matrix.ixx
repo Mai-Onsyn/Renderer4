@@ -1,4 +1,5 @@
 module;
+#include <cstring>
 #include <sstream>
 export module Matrix;
 import Types;
@@ -91,7 +92,9 @@ public:
 export class alignas(32) Matrix4x4 {
     Float m[16]{};
 public:
-    Matrix4x4() = default;
+    Matrix4x4() {
+        memset(m, 0, sizeof(m));
+    };
 
     Matrix4x4(Matrix4x4&& other) noexcept {
         memcpy(this->m, other.m, sizeof(m));

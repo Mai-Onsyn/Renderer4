@@ -1,8 +1,9 @@
 module;
-// #include <immintrin.h>
+#include <immintrin.h>
 export module FrameBuffer;
 import Types;
 import Color;
+import Logger;
 
 export class FrameBuffer {
     UInt8Buffer colorMap;
@@ -32,18 +33,18 @@ public:
         colorMap = makeUInt8Buffer(width * height * 4);
     }
 
-    // void clearScreen(const Color c) const {
-    //     const Int32 color = c.a << 24 | c.b << 16 | c.g << 8 | c.r;
-    //     const __m256i colorVec = _mm256_set1_epi32(color);
-    //     auto* pixels = reinterpret_cast<UInt32*>(colorMap.get());
-    //     const UInt64 totalPixels = width * height;
-    //     for (UInt64 i = 0; i < totalPixels; i += 8) {
-    //         _mm256_storeu_si256(reinterpret_cast<__m256i*>(&pixels[i]), colorVec);
-    //     }
-    //     for (UInt64 i = (totalPixels / 8) * 8; i < totalPixels; ++i) {
-    //         pixels[i] = color;
-    //     }
-    // }
+    void clearScreen(const Color c) const {
+        const Int32 color = c.a << 24 | c.b << 16 | c.g << 8 | c.r;
+        const __m256i colorVec = _mm256_set1_epi32(color);
+        auto* pixels = reinterpret_cast<UInt32*>(colorMap.get());
+        const UInt64 totalPixels = this->width * this->height;
+        for (UInt64 i = 0; i < totalPixels; i += 8) {
+            _mm256_storeu_si256(reinterpret_cast<__m256i*>(&pixels[i]), colorVec);
+        }
+        for (UInt64 i = (totalPixels / 8) * 8; i < totalPixels; i++) {
+            pixels[i] = color;
+        }
+    }
 
     inline void setPixel(const UInt32 x, const UInt32 y, const Color c) const {
         UInt8* pixel = colorMap.get() + (y * width + x) * 4;

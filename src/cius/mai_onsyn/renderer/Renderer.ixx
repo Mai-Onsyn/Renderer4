@@ -62,10 +62,18 @@ public:
             UInt32 renderedFrameCount = 0;
             while (!st.stop_requested()) {
 
-                if (resize_requested.load(std::memory_order_relaxed)) {
-                    sem_render_to_main.release();
+                if (resize_requested.load(std::memory_order_acquire)) {
+                    Int32 target_w = pending_width.load(std::memory_order_relaxed);
+                    Int32 target_h = pending_height.load(std::memory_order_relaxed);
 
-                    sem_main_to_render.acquire();
+                    tripleBuffer.resize(target_w, target_h);
+                    depthBuffer.reset(new Float[target_w * target_h]);
+                    this->width = target_w;
+                    this->height = target_h;
+
+                    onResize(target_w, target_h);
+
+                    resize_requested.store(false, std::memory_order_relaxed);
                 }
 
                 renderFrame();
@@ -84,18 +92,6 @@ public:
         pending_width.store(width, std::memory_order_relaxed);
         pending_height.store(height, std::memory_order_relaxed);
         resize_requested.store(true, std::memory_order_release);
-
-        sem_render_to_main.acquire();
-
-        tripleBuffer.resize(pending_width.load(std::memory_order_relaxed),
-                    pending_height.load(std::memory_order_relaxed));
-        depthBuffer.reset(new Float[width * height]);
-        this->width = width;
-        this->height = height;
-        onResize(width, height);
-
-        resize_requested.store(false, std::memory_order_relaxed);
-        sem_main_to_render.release();
     }
 
     [[nodiscard]] Float getFPS() const {

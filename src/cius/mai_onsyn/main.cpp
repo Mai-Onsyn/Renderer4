@@ -23,11 +23,11 @@ void makeTestScene(Application* app) {
         String localData = "Hello";
         Transform triangle{};
         Mesh trianglePiece;
-        trianglePiece.vertices.emplace_back(Vertex{{-0.747, -1, 4}, {0, 0, -1}});
-        trianglePiece.vertices.emplace_back(Vertex{{0.747, -1, 4}, {0, 0, -1}});
-        trianglePiece.vertices.emplace_back(Vertex{{0, 1, 4}, {0, 0, -1}});
+        trianglePiece.vertices.emplace_back(Vertex{{-1.732, -1, 4}, {0, 0, -1}});
+        trianglePiece.vertices.emplace_back(Vertex{{1.732, -1, 4}, {0, 0, -1}});
+        trianglePiece.vertices.emplace_back(Vertex{{0, 2, 4}, {0, 0, -1}});
         trianglePiece.triangles.emplace_back(0, 1, 2);
-        Entity testEntity{"Test Entity", trianglePiece, triangle};
+        Entity testEntity{"Test Entity", move(trianglePiece), move(triangle)};
         scene->addEntity(move(testEntity));
 
         Light light{"World Light", {0, 100, 0}, {255, 255, 255, 255}};
@@ -40,7 +40,7 @@ void makeTestScene(Application* app) {
 
 int main() {
     system("chcp 65001");
-    Application app("DisplayWindow", 800, 600);
+    Application app("DisplayWindow", 1440, 900);
     makeTestScene(&app);
     app.run();
 

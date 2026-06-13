@@ -163,7 +163,7 @@ export namespace VertexProcessor {
         Matrix4x4 viewPortMatrix{};
         viewPortMatrix[0] = 0.5f * sceneSnapShot->screenWidth;
         viewPortMatrix[3] = 0.5f * sceneSnapShot->screenWidth;
-        viewPortMatrix[5] = 0.5f * sceneSnapShot->screenHeight;
+        viewPortMatrix[5] = -0.5f * sceneSnapShot->screenHeight;
         viewPortMatrix[7] = 0.5f * sceneSnapShot->screenHeight;
         viewPortMatrix[10] = -1.0f;
         viewPortMatrix[11] = 1.0f;
@@ -171,6 +171,7 @@ export namespace VertexProcessor {
 
         for (const auto & pkg : sceneSnapShot->renderPackages) {
             const Matrix4x4 mvp = view_project * pkg.modelMatrix;
+            // Log::debug(mvp.toString());
             const Matrix3x3 normalMatrix = static_cast<Matrix3x3>(pkg.modelMatrix).inverse().transpose();
 
             const Vertex* vertexes = pkg.vertices;
@@ -187,8 +188,6 @@ export namespace VertexProcessor {
                 const ClipVertex& v1 = clipSpaceVertex[triangle.v1];
                 const ClipVertex& v2 = clipSpaceVertex[triangle.v2];
                 const ClipVertex& v3 = clipSpaceVertex[triangle.v3];
-
-                // Log::debug("v1: %s, v2: %s, v3: %s", v1.toString().c_str(), v2.toString().c_str(), v3.toString().c_str());
 
                 const Boolean satisfyV1z = v1.pos.z > 0;
                 const Boolean satisfyV2z = v2.pos.z > 0;
@@ -228,7 +227,6 @@ export namespace VertexProcessor {
                     satisfyV1yBottom && satisfyV2yBottom && satisfyV3yBottom &&
                     satisfyV1yTop && satisfyV2yTop && satisfyV3yTop
                     ) {
-                    // Log::debug("全部在视锥体内");
                     result.push_back(toScreenTriangle(v1, v2, v3, viewPortMatrix));
                 }
                 // 需要裁剪
@@ -262,8 +260,6 @@ export namespace VertexProcessor {
                 }
             }
         }
-
-        // Log::debug(sceneSnapShot->toString());
 
         return result;
     }
