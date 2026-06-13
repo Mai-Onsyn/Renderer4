@@ -89,7 +89,7 @@ Vector2D Vector2D::normalize() const {
 }
 
 String Vector2D::toString() const {
-    return format("({:.5f}, {:.5f})", x, y);
+    return format("(%.5f, %.5f)", x, y);
 }
 
 ostream& operator<<(ostream& lhs, const Vector2D& pos) {

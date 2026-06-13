@@ -5,11 +5,11 @@ module;
 export module Scene;
 import Types;
 import RenderPackage;
-import RenderPackage;
 import Mesh;
 import Light;
 import Camera;
 import Entity;
+import Matrix;
 
 export class Scene {
     String name;
@@ -43,11 +43,30 @@ public:
         }
     }
 
-    [[nodiscard]] SceneSnapShot* createSnapShot() const {
+    [[nodiscard]] SceneSnapShot* createSnapShot(const Int32 screenWidth, const Int32 screenHeight) const {
         auto* snapShot = new SceneSnapShot;
         snapShot->lights = lights;
         snapShot->ambientLight = {255, 255, 255, 255};
-        // snapShot->viewMatrix = camera.
+        snapShot->viewMatrix = camera.getViewTransformMatrix();
+        snapShot->projectionMatrix = camera.getProjectionMatrix(static_cast<Float>(screenWidth) / static_cast<Float>(screenHeight));
+        snapShot->cameraPos = camera.pos;
+
+        snapShot->screenWidth = screenWidth;
+        snapShot->screenHeight = screenHeight;
+        snapShot->near = camera.near;
+
+        for (const auto& entity : entities) {
+            RenderPackage pkg;
+            pkg.name = entity.name;
+            pkg.modelMatrix = entity.transform.modelMatrix;
+            pkg.vertexCount = entity.mesh.vertices.size();
+            pkg.triangleCount = entity.mesh.triangles.size();
+
+            pkg.vertices = entity.mesh.vertices.data();
+            pkg.triangles = entity.mesh.triangles.data();
+
+            snapShot->renderPackages.emplace_back(move(pkg));
+        }
         return snapShot;
     }
 

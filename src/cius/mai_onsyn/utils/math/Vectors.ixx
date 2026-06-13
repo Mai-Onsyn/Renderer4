@@ -11,25 +11,25 @@ export struct Vector2D {
     Vector2D() = default;
     Vector2D(Float x, Float y);
 
-    inline Vector2D operator+(const Vector2D& other) const;
-    inline Vector2D operator-(const Vector2D& v) const;
-    inline Vector2D operator*(const Vector2D& v) const;
-    inline Vector2D operator*(float scalar) const;
-    inline Vector2D operator/(const Vector2D& v) const;
-    inline Vector2D operator/(float scalar) const;
-    inline Vector2D& operator+=(const Vector2D& v);
-    inline Vector2D& operator-=(const Vector2D& v);
-    inline Vector2D& operator*=(const Vector2D& v);
-    inline Vector2D& operator*=(float scalar);
-    inline Vector2D& operator/=(const Vector2D& v);
-    inline Vector2D& operator/=(float scalar);
-    inline Boolean operator==(const Vector2D &v) const;
+    Vector2D operator+(const Vector2D& other) const;
+    Vector2D operator-(const Vector2D& v) const;
+    Vector2D operator*(const Vector2D& v) const;
+    Vector2D operator*(float scalar) const;
+    Vector2D operator/(const Vector2D& v) const;
+    Vector2D operator/(float scalar) const;
+    Vector2D& operator+=(const Vector2D& v);
+    Vector2D& operator-=(const Vector2D& v);
+    Vector2D& operator*=(const Vector2D& v);
+    Vector2D& operator*=(float scalar);
+    Vector2D& operator/=(const Vector2D& v);
+    Vector2D& operator/=(float scalar);
+    Boolean operator==(const Vector2D &v) const;
 
-    [[nodiscard]] inline Float dot(const Vector2D& v) const;
-    [[nodiscard]] inline Float length() const;
-    [[nodiscard]] inline Vector2D normalize() const;
+    [[nodiscard]] Float dot(const Vector2D& v) const;
+    [[nodiscard]] Float length() const;
+    [[nodiscard]] Vector2D normalize() const;
 
-    [[nodiscard]] inline String toString() const;
+    [[nodiscard]] String toString() const;
     friend ostream& operator<<(ostream & lhs, const Vector2D & pos);
 };
 
@@ -40,25 +40,25 @@ export struct VectorInt2D {
     VectorInt2D(Int64 x, Int64 y);
     explicit operator Vector2D() const;
 
-    inline VectorInt2D operator+(const VectorInt2D& other) const;
-    inline VectorInt2D operator-(const VectorInt2D& v) const;
-    inline VectorInt2D operator*(const VectorInt2D& v) const;
-    inline VectorInt2D operator*(Float scalar) const;
-    inline VectorInt2D operator/(const VectorInt2D& v) const;
-    inline VectorInt2D operator/(Float scalar) const;
-    inline VectorInt2D& operator+=(const VectorInt2D& v);
-    inline VectorInt2D& operator-=(const VectorInt2D& v);
-    inline VectorInt2D& operator*=(const VectorInt2D& v);
-    inline VectorInt2D& operator*=(Float scalar);
-    inline VectorInt2D& operator/=(const VectorInt2D& v);
-    inline VectorInt2D& operator/=(Float scalar);
-    inline Boolean operator==(const VectorInt2D &v) const;
+    VectorInt2D operator+(const VectorInt2D& other) const;
+    VectorInt2D operator-(const VectorInt2D& v) const;
+    VectorInt2D operator*(const VectorInt2D& v) const;
+    VectorInt2D operator*(Float scalar) const;
+    VectorInt2D operator/(const VectorInt2D& v) const;
+    VectorInt2D operator/(Float scalar) const;
+    VectorInt2D& operator+=(const VectorInt2D& v);
+    VectorInt2D& operator-=(const VectorInt2D& v);
+    VectorInt2D& operator*=(const VectorInt2D& v);
+    VectorInt2D& operator*=(Float scalar);
+    VectorInt2D& operator/=(const VectorInt2D& v);
+    VectorInt2D& operator/=(Float scalar);
+    Boolean operator==(const VectorInt2D &v) const;
 
-    [[nodiscard]] inline Int64 dot(const VectorInt2D& v) const;
-    [[nodiscard]] inline Int64 length() const;
-    [[nodiscard]] inline VectorInt2D normalize() const;
+    [[nodiscard]] Int64 dot(const VectorInt2D& v) const;
+    [[nodiscard]] Int64 length() const;
+    [[nodiscard]] VectorInt2D normalize() const;
 
-    [[nodiscard]] inline String toString() const;
+    [[nodiscard]] String toString() const;
     friend ostream& operator<<(ostream & lhs, const VectorInt2D & pos);
 };
 
@@ -70,25 +70,25 @@ export struct Vector3D {
     explicit Vector3D(const Vector2D& v2, Float z = 1.0f);
     explicit operator Vector2D() const;
 
-    inline Vector3D operator+(const Vector3D& other) const;
-    inline Vector3D operator-(const Vector3D& other) const;
-    inline Vector3D operator*(const Vector3D& other) const;
-    inline Vector3D operator*(Float scalar) const;
-    inline Vector3D operator/(const Vector3D& other) const;
-    inline Vector3D operator/(Float scalar) const;
-    inline Vector3D& operator+=(const Vector3D& other);
-    inline Vector3D& operator-=(const Vector3D& other);
-    inline Vector3D& operator*=(const Vector3D& other);
-    inline Vector3D& operator*=(Float scalar);
-    inline Vector3D& operator/=(const Vector3D& other);
-    inline Vector3D& operator/=(Float scalar);
-    inline Boolean operator==(const Vector3D& other) const;
-    [[nodiscard]] inline Float dot(const Vector3D& other) const;
-    [[nodiscard]] inline Vector3D cross(const Vector3D& other) const;
-    [[nodiscard]] inline Float length() const;
-    [[nodiscard]] inline Vector3D normalize() const;
+    Vector3D operator+(const Vector3D& other) const;
+    Vector3D operator-(const Vector3D& other) const;
+    Vector3D operator*(const Vector3D& other) const;
+    Vector3D operator*(Float scalar) const;
+    Vector3D operator/(const Vector3D& other) const;
+    Vector3D operator/(Float scalar) const;
+    Vector3D& operator+=(const Vector3D& other);
+    Vector3D& operator-=(const Vector3D& other);
+    Vector3D& operator*=(const Vector3D& other);
+    Vector3D& operator*=(Float scalar);
+    Vector3D& operator/=(const Vector3D& other);
+    Vector3D& operator/=(Float scalar);
+    Boolean operator==(const Vector3D& other) const;
+    [[nodiscard]] Float dot(const Vector3D& other) const;
+    [[nodiscard]] Vector3D cross(const Vector3D& other) const;
+    [[nodiscard]] Float length() const;
+    [[nodiscard]] Vector3D normalize() const;
 
-    [[nodiscard]] inline String toString() const;
+    [[nodiscard]] String toString() const;
     friend ostream& operator<<(ostream& lhs, const Vector3D& v);
 };
 
@@ -100,24 +100,24 @@ export struct Vector4D {
     explicit Vector4D(const Vector3D& v3, Float w = 1.0f);
     explicit operator Vector3D() const;
 
-    inline Vector4D operator+(const Vector4D& other) const;
-    inline Vector4D operator-(const Vector4D& other) const;
-    inline Vector4D operator*(const Vector4D& other) const;
-    inline Vector4D operator*(Float scalar) const;
-    inline Vector4D operator/(const Vector4D& other) const;
-    inline Vector4D operator/(Float scalar) const;
-    inline Vector4D& operator+=(const Vector4D& other);
-    inline Vector4D& operator-=(const Vector4D& other);
-    inline Vector4D& operator*=(const Vector4D& other);
-    inline Vector4D& operator*=(Float scalar);
-    inline Vector4D& operator/=(const Vector4D& other);
-    inline Vector4D& operator/=(Float scalar);
-    inline Boolean operator==(const Vector4D& other) const;
+    Vector4D operator+(const Vector4D& other) const;
+    Vector4D operator-(const Vector4D& other) const;
+    Vector4D operator*(const Vector4D& other) const;
+    Vector4D operator*(Float scalar) const;
+    Vector4D operator/(const Vector4D& other) const;
+    Vector4D operator/(Float scalar) const;
+    Vector4D& operator+=(const Vector4D& other);
+    Vector4D& operator-=(const Vector4D& other);
+    Vector4D& operator*=(const Vector4D& other);
+    Vector4D& operator*=(Float scalar);
+    Vector4D& operator/=(const Vector4D& other);
+    Vector4D& operator/=(Float scalar);
+    Boolean operator==(const Vector4D& other) const;
 
-    [[nodiscard]] inline Float dot(const Vector4D& other) const;
-    [[nodiscard]] inline Float length() const;
-    [[nodiscard]] inline Vector4D normalize() const;
+    [[nodiscard]] Float dot(const Vector4D& other) const;
+    [[nodiscard]] Float length() const;
+    [[nodiscard]] Vector4D normalize() const;
 
-    [[nodiscard]] inline String toString() const;
+    [[nodiscard]] String toString() const;
     friend ostream& operator<<(ostream& lhs, const Vector4D& v);
 };

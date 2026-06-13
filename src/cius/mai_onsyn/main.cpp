@@ -19,18 +19,15 @@ import Matrix;
 import Color;
 
 void makeTestScene(Application* app) {
-    String localData = "Hello";
-    const auto task = makeSceneOperation([localData](Scene* scene) {
-        Log::debug("任务 A，捕获值: %s, 执行者 ID: %s", scene->getName(), localData);
-
+    const auto task = makeSceneOperation([](Scene* scene) {
+        String localData = "Hello";
+        Transform triangle{};
         Mesh trianglePiece;
-        Transform transform;
         trianglePiece.vertices.emplace_back(Vertex{{-0.747, -1, 4}, {0, 0, -1}});
         trianglePiece.vertices.emplace_back(Vertex{{0.747, -1, 4}, {0, 0, -1}});
         trianglePiece.vertices.emplace_back(Vertex{{0, 1, 4}, {0, 0, -1}});
         trianglePiece.triangles.emplace_back(0, 1, 2);
-        transform.modelMatrix = Matrix4x4::I();
-        Entity testEntity{"Test Entity", move(trianglePiece), move(transform)};
+        Entity testEntity{"Test Entity", trianglePiece, triangle};
         scene->addEntity(move(testEntity));
 
         Light light{"World Light", {0, 100, 0}, {255, 255, 255, 255}};

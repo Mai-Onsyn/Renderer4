@@ -105,7 +105,7 @@ Vector4D Vector4D::normalize() const {
 }
 
 String Vector4D::toString() const {
-    return format("({:.5f}, {:.5f}, {:.5f}, {:.5f})", x, y, z, w);
+    return format("(%.5f, %.5f, %.5f, %.5f)", x, y, z, w);
 }
 
 ostream& operator<<(ostream& lhs, const Vector4D& v) {

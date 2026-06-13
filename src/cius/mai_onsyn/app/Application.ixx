@@ -91,7 +91,7 @@ public:
             }
 
             // 场景快照提交
-            renderer->submitSnapShot(scene->createSnapShot());
+            renderer->submitSnapShot(scene->createSnapShot(resizeRequestWidth, resizeRequestHeight));
 
             // 渲染器渲染
             if (const auto buffer = renderer->getDisplayBuffer(); buffer != nullptr) {

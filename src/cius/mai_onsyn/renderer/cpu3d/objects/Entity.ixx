@@ -1,4 +1,5 @@
 module;
+#include <algorithm>
 export module Entity;
 import Mesh;
 import Transform;
@@ -11,7 +12,11 @@ export struct Entity {
     Mesh mesh;
     Transform transform;
 
-    Entity(String name, Mesh mesh, Transform transform) : name(move(name)), mesh(move(mesh)), transform(move(transform)) {}
+    template<typename S, typename M, typename T>
+    Entity(S&& name, M&& mesh, T&& transform)
+        : name(std::forward<S>(name)),
+          mesh(std::forward<M>(mesh)),
+          transform(std::forward<T>(transform)) {}
 
     String toString() const {
         return format("Entity{name=%s, mesh=%s, transform=%s}", name, mesh.toString(), transform.toString());
