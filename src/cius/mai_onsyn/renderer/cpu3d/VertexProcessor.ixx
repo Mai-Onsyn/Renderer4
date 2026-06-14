@@ -11,12 +11,6 @@ import Vectors;
 import RenderPackage;
 import Logger;
 
-export struct ScreenTriangle {
-    ScreenVertex v1;
-    ScreenVertex v2;
-    ScreenVertex v3;
-};
-
 struct ClipVertex {
     Vector4D pos;
     Vector3D normal;
@@ -150,9 +144,9 @@ export namespace VertexProcessor {
         const Vector4D v3vp = viewPortMatrix * v3ndc;
 
         return {
-            {{static_cast<Int64>(v1vp.x), static_cast<Int64>(v1vp.y)}, 1.0f - v1ndc.z,  v1.normal},
-            {{static_cast<Int64>(v2vp.x), static_cast<Int64>(v2vp.y)}, 1.0f - v2ndc.z,  v2.normal},
-            {{static_cast<Int64>(v3vp.x), static_cast<Int64>(v3vp.y)}, 1.0f - v3ndc.z,  v3.normal}
+            {{static_cast<Int64>(v1vp.x), static_cast<Int64>(v1vp.y)}, 1.0f - v1ndc.z, v1.pos.w,  v1.normal},
+            {{static_cast<Int64>(v2vp.x), static_cast<Int64>(v2vp.y)}, 1.0f - v2ndc.z, v2.pos.w,  v2.normal},
+            {{static_cast<Int64>(v3vp.x), static_cast<Int64>(v3vp.y)}, 1.0f - v3ndc.z, v3.pos.w,  v3.normal}
         };
     }
 
@@ -233,6 +227,7 @@ export namespace VertexProcessor {
                 else {
                     // 后续切分三角形操作
                     switch (const List<ClipVertex> clippedVertices = clip(v1, v2, v3); clippedVertices.size()) {
+                        case 0: break;
                         case 3: {
                             result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[1], clippedVertices[2], viewPortMatrix));
                             break;
@@ -255,7 +250,16 @@ export namespace VertexProcessor {
                             result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[4], clippedVertices[5], viewPortMatrix));
                             break;
                         }
-                        default: throw RuntimeError("Invalid number of clipped vertices");
+                        case 7: {
+                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[1], clippedVertices[2], viewPortMatrix));
+                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[2], clippedVertices[3], viewPortMatrix));
+                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[3], clippedVertices[4], viewPortMatrix));
+                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[4], clippedVertices[5], viewPortMatrix));
+                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[5], clippedVertices[6], viewPortMatrix));
+                            break;
+                        }
+                        default: break; // 极端情况 给了
+                        // default: throw RuntimeError("Invalid number of clipped vertices: " + std::to_string(clippedVertices.size()));
                     }
                 }
             }

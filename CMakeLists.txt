@@ -24,9 +24,12 @@ target_link_libraries(${PROJECT_NAME} OpenGL::GL)
 target_link_libraries(${PROJECT_NAME} glfw)
 
 target_compile_options(${PROJECT_NAME} PRIVATE -mavx2)
-#if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-#    target_compile_options(${PROJECT_NAME} PRIVATE -mavx2 -mstackrealign)
-#endif()
+#add_compile_options(-fsanitize=address)
+#add_link_options(-fsanitize=address)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+#    target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
+#    target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
+endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE "libs")
 

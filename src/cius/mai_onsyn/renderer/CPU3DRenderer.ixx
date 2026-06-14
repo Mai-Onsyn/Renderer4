@@ -16,15 +16,18 @@ import Tile;
 import Logger;
 import Thread;
 import VertexProcessor;
+import TrianglePorcessor;
 import Vectors;
+import Triangle;
 
 export class CPU3DRenderer final : public Renderer {
     ThreadPool executor;
     UniquePtr<Tile[]> tiles;
+    UniquePtr<UniquePtr<Runnable>[]> tasks;
     Int32 tileCount = 0;
     Int32 tileSize = 0;
 public:
-    CPU3DRenderer(const Int32 width, const Int32 height, const Int32 threadCount = 6, const Int32 tileSize = 64) : Renderer(width, height), executor(threadCount), tileSize(tileSize) {
+    CPU3DRenderer(const Int32 width, const Int32 height, const Int32 threadCount = 12, const Int32 tileSize = 64) : Renderer(width, height), executor(threadCount), tileSize(tileSize) {
         onResize(width, height);
         executor.start();
     }
@@ -34,18 +37,13 @@ public:
         executor.stop();
     }
 
-    // void printTiles() const {
-    //     for (Int32 i = 0; i < tileCount; i++) {
-    //         Log::debug(tiles[i].toString());
-    //     }
-    // }
-
     void onResize(const Int32 width, const Int32 height) override {
         List<Tile> tileList = Tile::divideScreen(width, height, tileSize);
         tileCount = tileList.size();
         tiles = make_unique_for_overwrite<Tile[]>(tileCount);
         std::uninitialized_move(tileList.begin(), tileList.end(), tiles.get());
-        // printTiles();
+
+        tasks = make_unique_for_overwrite<UniquePtr<Runnable>[]>(tileCount);
     }
 
     void renderFrame() override {
@@ -59,59 +57,20 @@ public:
         frameBuffer->clearScreen({135, 206, 250, 255});
 
         const List<ScreenTriangle>& screenTriangles = VertexProcessor::process(sceneSnapShot);
-        if (!screenTriangles.empty()) {
-            VectorInt2D v1 = screenTriangles[0].v1.pos;
-            VectorInt2D v2 = screenTriangles[0].v2.pos;
-            VectorInt2D v3 = screenTriangles[0].v3.pos;
-            UInt32 v1offset = (v1.x + v1.y * width) << 2;
-            UInt32 v2offset = (v2.x + v2.y * width) << 2;
-            UInt32 v3offset = (v3.x + v3.y * width) << 2;
-            UInt8* buffer = frameBuffer->getBuffer();
-            buffer[v1offset] = 255;
-            buffer[v1offset + 1] = 0;
-            buffer[v1offset + 2] = 0;
-            buffer[v1offset + 3] = 255;
+        TriangleProcessor::binning(tiles.get(), screenTriangles, tileCount, tileSize, width, height);
 
-            buffer[v2offset] = 0;
-            buffer[v2offset + 1] = 255;
-            buffer[v2offset + 2] = 0;
-            buffer[v2offset + 3] = 255;
-
-            buffer[v3offset] = 0;
-            buffer[v3offset + 1] = 0;
-            buffer[v3offset + 2] = 255;
-            buffer[v3offset + 3] = 255;
-            Int32 ys = v3.y;
-            Int32 ye = v1.y;
-            for (Int32 y = ys; y < ye; y++) {
-                Int32 xs = v1.x + (y - v1.y) * (v3.x - v1.x) / (v3.y - v1.y);
-                Int32 xe = v2.x + (y - v2.y) * (v3.x - v2.x) / (v3.y - v2.y);
-                for (Int32 x = xs; x < xe; x++) {
-                    UInt32 offset = (x + y * width) << 2;
-                    buffer[offset] = 255;
-                    buffer[offset + 1] = 255;
-                    buffer[offset + 2] = 255;
-                    buffer[offset + 3] = 255;
-                }
-            }
-            // Log::debug("Triangle=%s, %s, %s", v1.toString(), v2.toString(), v3.toString());
+        const UInt64 timeFactor = millisTime();
+        for (Int32 i = 0; i < tileCount; i++) {
+            auto* task = new TileTask{tiles[i]};
+            task->setTriangleList(screenTriangles.data());
+            task->setDrawBuffer(frameBuffer, depthBuffer.get());
+            task->setTimeFactor(timeFactor);
+            tasks[i] = UniquePtr<Runnable>(task);
         }
+        executor.submit(tasks.get(), tileCount);
 
-
-        // auto tileTasks = std::make_unique<UniquePtr<Runnable>[]>(tileCount);
-        //
-        // const UInt64 CYCLE_DURATION_MS = 5000;
-        // Float timeFactor = static_cast<Float>(millisTime() % CYCLE_DURATION_MS) / static_cast<Float>(CYCLE_DURATION_MS);
-        // for (Int32 i = 0; i < tileCount; i++) {
-        //     auto* task = new TileTask{tiles[i]};
-        //     task->setDrawBuffer(frameBuffer, depthBuffer.get());
-        //     task->setTimeFactor(timeFactor);
-        //     tileTasks[i].reset(task);
-        // }
-        // executor.submit(tileTasks.get(), tileCount);
-        //
-        drawText(format("FPS = %.2f", getFPS()), 0, 0, frameBuffer->getBuffer());
-        drawText(format("Resolution = %d*%d", width, height), 0, 27, frameBuffer->getBuffer());
+        drawText(format("FPS = %.2f", getFPS()), 8, 8, frameBuffer->getBuffer());
+        drawText(format("Resolution = %d*%d", width, height), 8, 27 + 8, frameBuffer->getBuffer());
         tripleBuffer.commit();
     }
 

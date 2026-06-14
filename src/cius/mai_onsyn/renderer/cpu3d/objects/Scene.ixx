@@ -33,6 +33,15 @@ public:
         }
     }
 
+    Entity* getEntity(const String& meshName) {
+        for (UInt32 i = 0; i < entities.size(); i++) {
+            if (meshName == entities[i].name) {
+                return &entities[i];
+            }
+        }
+        return nullptr;
+    }
+
     void addLight(Light light) { lights.emplace_back(move(light)); }
 
     void removeLight(const String& lightName) {
@@ -68,6 +77,10 @@ public:
             snapShot->renderPackages.emplace_back(move(pkg));
         }
         return snapShot;
+    }
+
+    Camera& getCamera() {
+        return camera;
     }
 
     String toString() const {

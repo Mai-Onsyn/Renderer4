@@ -1,4 +1,5 @@
 module;
+#include <cstring>
 #include <immintrin.h>
 export module FrameBuffer;
 import Types;
@@ -44,6 +45,7 @@ public:
         for (UInt64 i = (totalPixels / 8) * 8; i < totalPixels; i++) {
             pixels[i] = color;
         }
+        // memset(colorMap.get(), 192, width * height * 4);
     }
 
     inline void setPixel(const UInt32 x, const UInt32 y, const Color c) const {

@@ -74,6 +74,7 @@ export struct Vector3D {
     Vector3D operator-(const Vector3D& other) const;
     Vector3D operator*(const Vector3D& other) const;
     Vector3D operator*(Float scalar) const;
+    Vector3D operator^(const Vector3D& other) const;
     Vector3D operator/(const Vector3D& other) const;
     Vector3D operator/(Float scalar) const;
     Vector3D& operator+=(const Vector3D& other);
@@ -87,6 +88,8 @@ export struct Vector3D {
     [[nodiscard]] Vector3D cross(const Vector3D& other) const;
     [[nodiscard]] Float length() const;
     [[nodiscard]] Vector3D normalize() const;
+
+    Vector3D rotate(Float angle, const Vector3D& axis) const;
 
     [[nodiscard]] String toString() const;
     friend ostream& operator<<(ostream& lhs, const Vector3D& v);

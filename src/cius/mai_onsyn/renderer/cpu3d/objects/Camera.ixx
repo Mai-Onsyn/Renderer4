@@ -6,6 +6,7 @@ import Vectors;
 import Matrix;
 
 export struct Camera {
+    const Vector3D up{0.0f, 1.0f, 0.0f};
     Vector3D pos;
     Vector3D vx;
     Vector3D vy;
@@ -15,6 +16,34 @@ export struct Camera {
     const Float near = 0.1;
 
     Camera() : pos({0, 0, 0}), vx({1, 0, 0}), vy({0, 1, 0}), vz({0, 0, 1}), fov(70.0f) {}
+
+    void moveX(const float distance) {
+        pos += vx * distance;
+    }
+
+    void moveY(const float distance) {
+        pos += up * distance;
+    }
+
+    void moveZ(const float distance) {
+        pos += (vx ^ up) * distance;
+    }
+
+    void rotateY(const float angle) {
+        vy = vy.rotate(angle, vx);
+        vz = vz.rotate(angle, vx);
+        // vy = Vector3D::rotate(vx, vy, angle);
+        // vz = Vector3D::rotate(vx, vz, angle);
+    }
+
+    void rotateX(const float angle) {
+        vx = vx.rotate(angle, up);
+        vy = vy.rotate(angle, up);
+        vz = vz.rotate(angle, up);
+        // vx = Vector3D::rotate(up, vx, angle);
+        // vy = Vector3D::rotate(up, vy, angle);
+        // vz = Vector3D::rotate(up, vz, angle);
+    }
 
     [[nodiscard]] Matrix4x4 getViewTransformMatrix() const {
         Matrix4x4 matrix;

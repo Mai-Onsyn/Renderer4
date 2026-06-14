@@ -27,15 +27,19 @@ Vector3D Vector3D::operator*(const Vector3D& other) const {
     return {x * other.x, y * other.y, z * other.z};
 }
 
-Vector3D Vector3D::operator*(Float scalar) const { return
+Vector3D Vector3D::operator*(const Float scalar) const { return
     {x * scalar, y * scalar, z * scalar};
+}
+
+Vector3D Vector3D::operator^(const Vector3D &other) const {
+    return cross(other);
 }
 
 Vector3D Vector3D::operator/(const Vector3D& other) const {
     return {x / other.x, y / other.y, z / other.z};
 }
 
-Vector3D Vector3D::operator/(Float scalar) const {
+Vector3D Vector3D::operator/(const Float scalar) const {
     return {x / scalar, y / scalar, z / scalar};
 }
 
@@ -106,6 +110,28 @@ Vector3D Vector3D::normalize() const {
         return {x / len, y / len, z / len};
     return *this;
 }
+
+Vector3D Vector3D::rotate(const Float angle, const Vector3D &axis) const {
+    // k 必须为单位向量，若不是，则需要进行归一化
+    const Vector3D kr = axis.normalize();
+
+    // 计算 v 和 k 的点积
+    const Float dp = dot(kr);
+
+    // 计算 v 和 k 的叉积
+    const Vector3D cp = kr ^ *this;
+
+    // 计算旋转后的向量
+    const auto cosTheta = static_cast<Float>(cos(angle));
+    const auto sinTheta = static_cast<Float>(sin(angle));
+
+    Float vxT = x * cosTheta + (1 - cosTheta) * dp * kr.x + sinTheta * cp.x;
+    Float vyT = y * cosTheta + (1 - cosTheta) * dp * kr.y + sinTheta * cp.y;
+    Float vzT = z * cosTheta + (1 - cosTheta) * dp * kr.z + sinTheta * cp.z;
+
+    return {vxT, vyT, vzT};
+}
+
 
 String Vector3D::toString() const {
     return format("(%.5f, %.5f, %.5f)", x, y, z);

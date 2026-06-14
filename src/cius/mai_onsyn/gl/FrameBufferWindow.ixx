@@ -51,6 +51,22 @@ public:
         cleanup();
     }
 
+    void moveMouse(const int x, const int y) {
+        glfwSetCursorPos(m_window, x, y);
+    }
+
+    void disableCursor() {
+        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    }
+
+    void enableCursor() {
+        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+
+    bool isFocused() const {
+        return glfwGetWindowAttrib(m_window, GLFW_FOCUSED) == GLFW_TRUE;
+    }
+
     bool initialize() {
         if (!glfwInit()) {
             std::cerr << "Failed to initialize GLFW\n";
@@ -120,6 +136,10 @@ public:
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
         glfwSwapBuffers(m_window);
+    }
+
+    void update() {
+        glfwPollEvents();
     }
 
 private:
