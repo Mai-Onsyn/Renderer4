@@ -1,31 +1,29 @@
 #include <iostream>
 #include <memory>
 
-import Application;
-import Time;
-import Types;
-import Tile;
-import MathUtil;
-import ThreadPool;
-import Thread;
-import Logger;
-import Scene;
-import Mesh;
-import Light;
-import Transform;
-import Entity;
-import Vertex;
-import Matrix;
-import Color;
+#define USE_2D
 
-void makeTestScene(Application* app) {
-    const auto task = makeSceneOperation([](Scene* scene) {
+#ifdef USE_3D
+import Types;
+import Application;
+import Scene3D;
+import Vertex;
+import Transform;
+import Mesh;
+import Entity;
+import Light;
+import Logger;
+import CPU3DRenderer;
+import Scene;
+
+void makeTestScene(Application<CPU3DRenderer>* app) {
+    const auto task = makeSceneOperation<Scene3D>([](Scene3D* scene) {
         String localData = "Hello";
         Transform triangle{};
         Mesh trianglePiece;
-        trianglePiece.vertices.emplace_back(Vertex{{-1.732, -1, 4}, {0, 0, -1}});
-        trianglePiece.vertices.emplace_back(Vertex{{1.732, -1, 4}, {0, 0, -1}});
-        trianglePiece.vertices.emplace_back(Vertex{{0, 2, 4}, {0, 0, -1}});
+        trianglePiece.vertices.emplace_back(Vertex{{-1.732, -1, 0}, {0, 0, -1}});
+        trianglePiece.vertices.emplace_back(Vertex{{1.732, -1, 0}, {0, 0, -1}});
+        trianglePiece.vertices.emplace_back(Vertex{{0, 2, 0}, {0, 0, -1}});
         trianglePiece.triangles.emplace_back(0, 1, 2);
         Entity testEntity{"Test Entity", move(trianglePiece), move(triangle)};
         scene->addEntity(move(testEntity));
@@ -40,9 +38,25 @@ void makeTestScene(Application* app) {
 
 int main() {
     system("chcp 65001");
-    Application app("DisplayWindow", 1440, 900);
+    Application<CPU3DRenderer> app("DisplayWindow", 1440, 900);
     makeTestScene(&app);
     app.run();
 
     return 0;
 }
+
+#endif
+
+#ifdef USE_2D
+import Application;
+import CPU2DRenderer;
+
+int main() {
+    system("chcp 65001");
+    Application<CPU2DRenderer> app("DisplayWindow", 1440, 900);
+    app.run();
+
+    return 0;
+}
+
+#endif

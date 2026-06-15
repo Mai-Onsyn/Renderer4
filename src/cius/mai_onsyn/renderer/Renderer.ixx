@@ -11,9 +11,10 @@ import TripleBuffer;
 import FontDrawer;
 import Image;
 import Color;
-import RenderPackage;
+import SceneSnapShotBuffer;
 
-export class Renderer {
+export template<typename SnapshotT>
+class Renderer {
     Thread* thread = nullptr;
     Float fps = 0;
 
@@ -25,7 +26,7 @@ export class Renderer {
 protected:
     TripleBuffer tripleBuffer;
     UniquePtr<Float[]> depthBuffer;
-    RenderSnapShotDoubleBuffer snapShotBuffer;
+    RenderSnapShotDoubleBuffer<SnapshotT> snapShotBuffer{};
     Boolean resizeSignal = false;
     Mutex mtx;
     ConditionVariable cv;
@@ -105,7 +106,7 @@ public:
         }
     }
 
-    void submitSnapShot(SceneSnapShot* snapShot) {
+    void submitSnapShot(SnapshotT* snapShot) {
         snapShotBuffer.submit(snapShot);
     }
 };

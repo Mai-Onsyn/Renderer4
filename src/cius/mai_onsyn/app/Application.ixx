@@ -1,32 +1,32 @@
 module;
 #include <string>
-#include "GLFW/glfw3.h"
 #include <cmath>
 export module Application;
 import FramebufferWindow;
 import Types;
-import FrameBuffer;
-import Renderer;
-import CPU3DRenderer;
-import Logger;
-import Functions;
-import Time;
-import Queue;
-import Thread;
-import Scene;
 import InputManager;
-import Entity;
-import Matrix;
+import Queue;
+import Scene;
+import Time;
+import Logger;
+import Thread;
+import Functions;
 
 constexpr UInt32 TARGET_WINDOW_FRAMERATE = 100;
 
-export class Application {
+template<typename T>
+concept RendererType = requires { typename T::SupportedScene; };
+
+export template<RendererType RendererT>
+class Application {
+    using SceneT = RendererT::SupportedScene;
+
     UniquePtr<FramebufferWindow> window;
-    UniquePtr<Renderer> renderer;
-    UniquePtr<Scene> scene;
+    UniquePtr<RendererT> renderer;
+    UniquePtr<SceneT> scene;
     UniquePtr<InputManager> inputManager;
 
-    Queue<SceneOperation*> sceneOperations{};
+    Queue<SceneOperation<SceneT>*> sceneOperations{};
 
     Int32 windowWidth, windowHeight;
     Queue<Pair<Int32, Int32>> resizeRequests{};
@@ -36,8 +36,8 @@ export class Application {
 public:
     Application(const String& title, const Int32 width, const Int32 height) {
         window = make_unique<FramebufferWindow>(width, height, title);
-        renderer = make_unique<CPU3DRenderer>(width, height);
-        scene = make_unique<Scene>("Test Scene");
+        renderer = make_unique<RendererT>(width, height);
+        scene = make_unique<SceneT>();
         inputManager = make_unique<InputManager>();
         windowWidth = width;
         windowHeight = height;
@@ -87,12 +87,11 @@ public:
             }
 
             // 摄像机更新
-            updateCamera();
-            rotateTest();
+            scene.get()->update(inputManager.get(), TARGET_WINDOW_FRAMERATE, windowWidth, windowHeight, window.get());
 
             // 场景更新
             while (!sceneOperations.empty()) {
-                SceneOperation* operation = sceneOperations.pop();
+                SceneOperation<SceneT>* operation = sceneOperations.pop();
                 operation->invoke(scene.get());
                 delete operation;
             }
@@ -124,69 +123,7 @@ public:
         renderer->stop();
     }
 
-    Float r = 0;
-    void rotateTest() {
-        auto entity = scene.get()->getEntity("Test Entity");
-        if (!entity) return;
-        entity->transform.modelMatrix[0] = cos(r);
-        entity->transform.modelMatrix[8] = sin(r);
-        entity->transform.modelMatrix[2] = -sin(r);
-        entity->transform.modelMatrix[10] = cos(r);
-        r += 0.03f;
-    }
-
-    void updateCamera() {
-        if (window->isFocused()) {
-            Float step = 0.05f;
-            if (inputManager->isKeyPressed(GLFW_KEY_LEFT_CONTROL))
-                step *= 4;
-            // 移动
-            if (inputManager->isKeyPressed(GLFW_KEY_A))
-                scene->getCamera().moveX(-step);
-            if (inputManager->isKeyPressed(GLFW_KEY_D))
-                scene->getCamera().moveX(step);
-            if (inputManager->isKeyPressed(GLFW_KEY_W))
-                scene->getCamera().moveZ(step);
-            if (inputManager->isKeyPressed(GLFW_KEY_S))
-                scene->getCamera().moveZ(-step);
-            if (inputManager->isKeyPressed(GLFW_KEY_LEFT_SHIFT))
-                scene->getCamera().moveY(-step);
-            if (inputManager->isKeyPressed(GLFW_KEY_SPACE))
-                scene->getCamera().moveY(step);
-            // 视角
-            if (inputManager->isKeyPressed(GLFW_KEY_UP))
-                scene->getCamera().rotateY(-step / 4);
-            if (inputManager->isKeyPressed(GLFW_KEY_DOWN))
-                scene->getCamera().rotateY(step / 4);
-            if (inputManager->isKeyPressed(GLFW_KEY_LEFT))
-                scene->getCamera().rotateX(-step / 4);
-            if (inputManager->isKeyPressed(GLFW_KEY_RIGHT))
-                scene->getCamera().rotateX(step / 4);
-
-            // 捕获鼠标
-            if (inputManager->isMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT)) {
-                mouseGrabbed = true;
-                // window->moveMouse(windowWidth >> 1, windowHeight >> 1);
-                window->disableCursor();
-                inputManager->consumeMouseMove();
-            }
-            // 释放鼠标
-            if (inputManager->isKeyPressed(GLFW_KEY_ESCAPE)) {
-                mouseGrabbed = false;
-                window->enableCursor();
-            }
-
-            // 鼠标移动视角
-            if (mouseGrabbed) {
-                const Float mouseStep = 0.002f * TARGET_WINDOW_FRAMERATE / 100;
-                const auto delta = inputManager->consumeMouseMove();
-                scene->getCamera().rotateX(delta.x * mouseStep);
-                scene->getCamera().rotateY(delta.y * mouseStep);
-            }
-        }
-    }
-
-    void addSceneUpdate(SceneOperation* op) {
+    void addSceneUpdate(SceneOperation<SceneT>* op) {
         sceneOperations.push(op);
     }
 };

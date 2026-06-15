@@ -1,5 +1,4 @@
 module;
-#include <atomic>
 #include <sstream>
 export module RenderPackage;
 import Types;
@@ -29,7 +28,7 @@ export struct RenderPackage {
     }
 };
 
-export struct SceneSnapShot {
+export struct Scene3DSnapShot {
     Matrix4x4 viewMatrix;
     Matrix4x4 projectionMatrix;
     Vector3D cameraPos;
@@ -66,38 +65,5 @@ export struct SceneSnapShot {
         }
         ss << "]}";
         return ss.str();
-    }
-};
-
-export class RenderSnapShotDoubleBuffer {
-    UniquePtr<SceneSnapShot> front;
-    UniquePtr<SceneSnapShot> back;
-
-    Mutex mtx;
-    Atomic<Boolean> hasNewSnapShot{false};
-public:
-
-    void submit(SceneSnapShot* snapShot) {
-        LockGuard lock(mtx);
-        back.reset(snapShot);
-        hasNewSnapShot.store(true, std::memory_order_release);
-    }
-
-    void swap() {
-        if (!hasNewSnapShot.load(std::memory_order_acquire)) return;
-
-        UniquePtr<SceneSnapShot> oldFront;
-
-        {
-            LockGuard lock(mtx);
-            oldFront = std::move(front);
-            front = std::move(back);
-
-            hasNewSnapShot.store(false, std::memory_order_relaxed);
-        }
-    }
-
-    [[nodiscard]] const SceneSnapShot* getContex() const {
-        return front.get();
     }
 };

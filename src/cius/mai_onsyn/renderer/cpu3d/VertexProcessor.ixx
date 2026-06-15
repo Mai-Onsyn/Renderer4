@@ -150,7 +150,7 @@ export namespace VertexProcessor {
         };
     }
 
-    List<ScreenTriangle> process(const SceneSnapShot* sceneSnapShot) {
+    List<ScreenTriangle> process(const Scene3DSnapShot* sceneSnapShot) {
         List<ScreenTriangle> result;
 
         const Matrix4x4 view_project = sceneSnapShot->projectionMatrix * sceneSnapShot->viewMatrix;
