@@ -8,7 +8,7 @@ import Triangle;
 import ScreenVertex;
 import Vertex;
 import Vectors;
-import RenderPackage;
+import RenderPackage3D;
 import Logger;
 
 struct ClipVertex {

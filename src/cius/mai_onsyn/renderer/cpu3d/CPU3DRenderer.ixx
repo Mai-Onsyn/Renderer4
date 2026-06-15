@@ -19,7 +19,7 @@ import VertexProcessor;
 import TrianglePorcessor;
 import Vectors;
 import Triangle;
-import RenderPackage;
+import RenderPackage3D;
 import Scene3D;
 
 export class CPU3DRenderer final : public Renderer<Scene3DSnapShot> {
@@ -53,7 +53,7 @@ public:
         snapShotBuffer.swap();
         const auto sceneSnapShot = snapShotBuffer.getContex();
         if (sceneSnapShot == nullptr) {
-            std::this_thread::yield();
+            Thread::yield();
             return;
         }
         const auto frameBuffer = tripleBuffer.getRenderBuffer();

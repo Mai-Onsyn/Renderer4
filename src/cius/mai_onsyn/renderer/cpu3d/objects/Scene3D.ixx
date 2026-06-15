@@ -5,7 +5,7 @@ module;
 #include <cmath>
 export module Scene3D;
 import Types;
-import RenderPackage;
+import RenderPackage3D;
 import Mesh;
 import Light;
 import Camera;
@@ -16,8 +16,6 @@ import InputManager;
 import Scene;
 
 export class Scene3D final : public Scene<Scene3DSnapShot> {
-    // String name;
-
     List<Entity> entities{};
     List<Light> lights{};
     Camera camera{};
@@ -25,12 +23,8 @@ export class Scene3D final : public Scene<Scene3DSnapShot> {
     Boolean mouseGrabbed = false;
 public:
     using SnapShot = Scene3DSnapShot;
-    // explicit Scene3D(String name): name(move(name)) {}
-    // Scene3D(): Scene3D("") {}
 
-    // [[nodiscard]] String getName() const { return name; }
-
-    void addEntity(Entity mesh) { entities.emplace_back(move(mesh)); }
+    void addEntity(Entity e) { entities.emplace_back(move(e)); }
 
     void removeEntity(const String& meshName) {
         for (UInt32 i = 0; i < entities.size(); i++) {
@@ -72,7 +66,7 @@ public:
         snapShot->near = camera.near;
 
         for (const auto& entity : entities) {
-            RenderPackage pkg;
+            RenderPackage3D pkg;
             pkg.name = entity.name;
             pkg.modelMatrix = entity.transform.modelMatrix;
             pkg.vertexCount = entity.mesh.vertices.size();

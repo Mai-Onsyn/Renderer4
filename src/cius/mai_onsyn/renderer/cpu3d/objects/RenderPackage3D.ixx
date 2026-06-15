@@ -1,6 +1,6 @@
 module;
 #include <sstream>
-export module RenderPackage;
+export module RenderPackage3D;
 import Types;
 import Matrix;
 import Vectors;
@@ -9,7 +9,7 @@ import Color;
 import Vertex;
 import Triangle;
 
-export struct RenderPackage {
+export struct RenderPackage3D {
     String name;
     Matrix4x4 modelMatrix;
 
@@ -38,7 +38,7 @@ export struct Scene3DSnapShot {
 
     Color ambientLight;
     List<Light> lights;
-    List<RenderPackage> renderPackages;
+    List<RenderPackage3D> renderPackages;
 
     [[nodiscard]] String toString() const {
         std::stringstream ss;

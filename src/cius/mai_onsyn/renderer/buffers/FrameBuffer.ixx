@@ -9,14 +9,14 @@ import Logger;
 export class FrameBuffer {
     UInt8Buffer colorMap;
 public:
-    UInt32 width, height;
+    Int32 width, height;
 
     FrameBuffer() {
         colorMap = nullptr;
         width = 0;
         height = 0;
     }
-    FrameBuffer(const UInt32 width, const UInt32 height): width(width), height(height) {
+    FrameBuffer(const Int32 width, const Int32 height): width(width), height(height) {
         colorMap = makeUInt8Buffer(width * height * 4);
     }
     FrameBuffer(FrameBuffer&& other) noexcept = default;
@@ -28,7 +28,7 @@ public:
         return colorMap.get();
     }
 
-    void resize(const UInt32 width, const UInt32 height) {
+    void resize(const Int32 width, const Int32 height) {
         this->width = width;
         this->height = height;
         colorMap = makeUInt8Buffer(width * height * 4);

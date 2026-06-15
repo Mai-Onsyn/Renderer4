@@ -31,7 +31,7 @@ export class ThreadPool {
         while (!st.stop_requested()) {
             // 没有任何提交的任务波次时，释放时间片
             if (remainingTasks.load(std::memory_order_relaxed) <= 0) {
-                std::this_thread::yield();
+                Thread::yield();
                 continue;
             }
 
@@ -77,7 +77,7 @@ export class ThreadPool {
                     waitCv.notify_all();
                 }
             } else {
-                std::this_thread::yield();
+                Thread::yield();
             }
         }
     }

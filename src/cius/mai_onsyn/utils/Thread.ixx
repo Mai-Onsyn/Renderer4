@@ -29,6 +29,10 @@ public:
     static std::thread::id getID() {
         return std::this_thread::get_id();
     }
+
+    static void yield() {
+        std::this_thread::yield();
+    }
 };
 
 export template<typename F>

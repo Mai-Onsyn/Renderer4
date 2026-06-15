@@ -13,6 +13,8 @@ import Image;
 import Color;
 import SceneSnapShotBuffer;
 
+constexpr Float TARGET_FPS = 0;
+
 export template<typename SnapshotT>
 class Renderer {
     Thread* thread = nullptr;
@@ -59,7 +61,8 @@ public:
 
     void start() {
         thread = new BasicThread([this](const StopToken& st) {
-            UInt64 timestamp = millisTime();
+            UInt64 fpsUpdateTimestamp = millisTime();
+            UInt64 lastFrameTimestamp = millisTime();
             UInt32 renderedFrameCount = 0;
             while (!st.stop_requested()) {
 
@@ -79,10 +82,16 @@ public:
 
                 renderFrame();
                 renderedFrameCount++;
-                if (const UInt64 currentTime = millisTime(); currentTime - timestamp >= 1000) {
-                    fps = static_cast<Float>(renderedFrameCount) / static_cast<Float>(currentTime - timestamp) * 1000;
-                    timestamp = currentTime;
+                const UInt64 currentTime = millisTime();
+                if (currentTime - fpsUpdateTimestamp >= 1000) {
+                    fps = static_cast<Float>(renderedFrameCount) / static_cast<Float>(currentTime - fpsUpdateTimestamp) * 1000;
+                    fpsUpdateTimestamp = currentTime;
                     renderedFrameCount = 0;
+                }
+                if constexpr (TARGET_FPS != 0) {
+                    const UInt64 sleepTime = 1000.0f / TARGET_FPS - (currentTime - lastFrameTimestamp);
+                    Thread::sleep(sleepTime);
+                    lastFrameTimestamp = currentTime;
                 }
             }
         });

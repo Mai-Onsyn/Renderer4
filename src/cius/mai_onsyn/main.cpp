@@ -50,10 +50,43 @@ int main() {
 #ifdef USE_2D
 import Application;
 import CPU2DRenderer;
+import Scene;
+import Scene2D;
+import Box;
+import Text;
+import Graphics2D;
+import Color;
+import Types;
+
+void makeTestScene(Application<CPU2DRenderer>* app) {
+    const auto task = makeSceneOperation<Scene2D>([](Scene2D* scene) {
+        Box box{
+            Graphics2D::Rect2D{{50, 50}, {600, 600}},
+            Graphics2D::Alignment::Center,
+            Color::Red,
+            Color::Blue,
+            1,
+            0
+        };
+
+        Text text {
+            "Ave Mujika",
+            {150, 50},
+            Graphics2D::Alignment::TopLeft,
+            32,
+            Color::Magenta
+        };
+
+        scene->addBox(move(box));
+        scene->addText(move(text));
+    });
+    app->addSceneUpdate(task);
+}
 
 int main() {
     system("chcp 65001");
     Application<CPU2DRenderer> app("DisplayWindow", 1440, 900);
+    makeTestScene(&app);
     app.run();
 
     return 0;
