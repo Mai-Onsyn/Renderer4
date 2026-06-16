@@ -177,4 +177,65 @@ public:
             }
         }
     }
+
+    Float getTextWidth(const String& text, const Float fontSize) const {
+        const Float scale = stbtt_ScaleForPixelHeight(&fontInfo, fontSize);
+        Int64 textLength = text.length();
+        Int32 totalAdvance = 0;
+
+        Int64 i = 0;
+        while (i < textLength) {
+            // 1. 同步使用标准的 UTF-8 解码状态机，确保中英文宽度都准确
+            Int32 codepoint = 0;
+            UInt8 c1 = static_cast<UInt8>(text[i]);
+
+            if (c1 < 0x80) {
+                codepoint = c1;
+                i += 1;
+            } else if ((c1 & 0xE0) == 0xC0) {
+                if (i + 1 >= textLength) break;
+                UInt8 c2 = static_cast<UInt8>(text[i + 1]);
+                codepoint = ((c1 & 0x1F) << 6) | (c2 & 0x3F);
+                i += 2;
+            } else if ((c1 & 0xF0) == 0xE0) {
+                if (i + 2 >= textLength) break;
+                UInt8 c2 = static_cast<UInt8>(text[i + 1]);
+                UInt8 c3 = static_cast<UInt8>(text[i + 2]);
+                codepoint = ((c1 & 0x0F) << 12) | ((c2 & 0x3F) << 6) | (c3 & 0x3F);
+                i += 3;
+            } else if ((c1 & 0xF8) == 0xF0) {
+                if (i + 3 >= textLength) break;
+                UInt8 c2 = static_cast<UInt8>(text[i + 1]);
+                UInt8 c3 = static_cast<UInt8>(text[i + 2]);
+                UInt8 c4 = static_cast<UInt8>(text[i + 3]);
+                codepoint = ((c1 & 0x07) << 18) | ((c2 & 0x3F) << 12) | ((c3 & 0x3F) << 6) | (c4 & 0x3F);
+                i += 4;
+            } else {
+                i += 1;
+                continue;
+            }
+
+            // 2. 仅获取当前字元的步进宽度（Advance Width）
+            Int32 advance, lsb;
+            stbtt_GetCodepointHMetrics(&fontInfo, codepoint, &advance, &lsb);
+            totalAdvance += advance;
+
+            // 3. 计算字距微调（Kerning）
+            if (i < textLength) {
+                Int32 nextCodepoint = 0;
+                UInt8 n1 = static_cast<UInt8>(text[i]);
+                if (n1 < 0x80) nextCodepoint = n1;
+                else if ((n1 & 0xE0) == 0xC0 && i + 1 < textLength) nextCodepoint = ((n1 & 0x1F) << 6) | (static_cast<UInt8>(text[i + 1]) & 0x3F);
+                else if ((n1 & 0xF0) == 0xE0 && i + 2 < textLength) nextCodepoint = ((n1 & 0x0F) << 12) | ((static_cast<UInt8>(text[i + 1]) & 0x3F) << 6) | (static_cast<UInt8>(text[i + 2]) & 0x3F);
+                else if ((n1 & 0xF0) == 0xF0 && i + 3 < textLength) nextCodepoint = ((n1 & 0x07) << 18) | ((static_cast<UInt8>(text[i + 1]) & 0x3F) << 12) | ((static_cast<UInt8>(text[i + 2]) & 0x3F) << 6) | (static_cast<UInt8>(text[i + 3]) & 0x3F);
+
+                if (nextCodepoint > 0) {
+                    totalAdvance += stbtt_GetCodepointKernAdvance(&fontInfo, codepoint, nextCodepoint);
+                }
+            }
+        }
+
+        // 4. 统一应用缩放比例，返回最终的像素宽度
+        return static_cast<Float>(totalAdvance) * scale;
+    }
 };

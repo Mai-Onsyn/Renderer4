@@ -20,6 +20,7 @@ export namespace BoxDrawer {
 
         const Int32 ys = clamp(topLeft.y, 0, screen->height);
         const Int32 ye = clamp(topLeft.y + size.y, 0, screen->height);
+        if (ys >= ye) return;
 
         UInt8* buffer = screen->getBuffer();
         for (Int32 y = ys; y < ye; y++) {
@@ -27,15 +28,8 @@ export namespace BoxDrawer {
             const Int32 xs = clamp(topLeft.x, 0, screen->width);
             const Int32 xe = clamp(topLeft.x + size.x, 0, screen->width);
 
+            if (xs >= xe) continue;
             avx2Fill(buffer, rowIdx + xs, box.fillColor, xe - xs);
-
-            // for (Int32 x = xs; x < xe; x++) {
-            //     const Int32 idx = (rowIdx + x) << 2;
-            //     buffer[idx] = box.fillColor.r;
-            //     buffer[idx + 1] = box.fillColor.g;
-            //     buffer[idx + 2] = box.fillColor.b;
-            //     buffer[idx + 3] = box.fillColor.a;
-            // }
         }
     }
 }
