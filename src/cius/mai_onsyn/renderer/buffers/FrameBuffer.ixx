@@ -5,6 +5,7 @@ export module FrameBuffer;
 import Types;
 import Color;
 import Logger;
+import Functions;
 
 export class FrameBuffer {
     UInt8Buffer colorMap;
@@ -35,16 +36,17 @@ public:
     }
 
     void clearScreen(const Color c) const {
-        const Int32 color = c.a << 24 | c.b << 16 | c.g << 8 | c.r;
-        const __m256i colorVec = _mm256_set1_epi32(color);
-        auto* pixels = reinterpret_cast<UInt32*>(colorMap.get());
-        const UInt64 totalPixels = this->width * this->height;
-        for (UInt64 i = 0; i < totalPixels; i += 8) {
-            _mm256_storeu_si256(reinterpret_cast<__m256i*>(&pixels[i]), colorVec);
-        }
-        for (UInt64 i = (totalPixels / 8) * 8; i < totalPixels; i++) {
-            pixels[i] = color;
-        }
+        // const Int32 color = c.a << 24 | c.b << 16 | c.g << 8 | c.r;
+        // const __m256i colorVec = _mm256_set1_epi32(color);
+        // auto* pixels = reinterpret_cast<UInt32*>(colorMap.get());
+        // const UInt64 totalPixels = this->width * this->height;
+        // for (UInt64 i = 0; i < totalPixels; i += 8) {
+        //     _mm256_storeu_si256(reinterpret_cast<__m256i*>(&pixels[i]), colorVec);
+        // }
+        // for (UInt64 i = (totalPixels / 8) * 8; i < totalPixels; i++) {
+        //     pixels[i] = color;
+        // }
+        avx2Fill(colorMap.get(), 0, c, width * height);
         // memset(colorMap.get(), 192, width * height * 4);
     }
 

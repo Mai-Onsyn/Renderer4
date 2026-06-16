@@ -13,7 +13,7 @@ import Image;
 import Color;
 import SceneSnapShotBuffer;
 
-constexpr Float TARGET_FPS = 0;
+constexpr Float TARGET_FPS = 100;
 
 export template<typename SnapshotT>
 class Renderer {

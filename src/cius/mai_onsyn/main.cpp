@@ -1,7 +1,7 @@
 #include <iostream>
 #include <memory>
 
-#define USE_2D
+// #define USE_2D
 
 #ifdef USE_3D
 import Types;
@@ -61,9 +61,18 @@ import Types;
 void makeTestScene(Application<CPU2DRenderer>* app) {
     const auto task = makeSceneOperation<Scene2D>([](Scene2D* scene) {
         Box box{
-            Graphics2D::Rect2D{{50, 50}, {600, 600}},
+            Graphics2D::Rect2D{{400, 400}, {200, 100}},
             Graphics2D::Alignment::Center,
             Color::Red,
+            Color::Blue,
+            1,
+            0
+        };
+
+        Box p{
+            Graphics2D::Rect2D{{400, 400}, {10, 10}},
+            Graphics2D::Alignment::Center,
+            Color::Blue,
             Color::Blue,
             1,
             0
@@ -74,10 +83,11 @@ void makeTestScene(Application<CPU2DRenderer>* app) {
             {150, 50},
             Graphics2D::Alignment::TopLeft,
             32,
-            Color::Magenta
+            Color::Black
         };
 
         scene->addBox(move(box));
+        scene->addBox(move(p));
         scene->addText(move(text));
     });
     app->addSceneUpdate(task);
@@ -87,6 +97,28 @@ int main() {
     system("chcp 65001");
     Application<CPU2DRenderer> app("DisplayWindow", 1440, 900);
     makeTestScene(&app);
+    app.run();
+
+    return 0;
+}
+
+#endif
+
+#define LINK_SET
+
+#ifdef LINK_SET
+import LinkSetSceneDrawer;
+import Application;
+import CPU2DRenderer;
+import Types;
+import Thread;
+
+int main() {
+    system("chcp 65001");
+    Application<CPU2DRenderer> app("链表集合运算演示", 1440, 900);
+
+
+
     app.run();
 
     return 0;

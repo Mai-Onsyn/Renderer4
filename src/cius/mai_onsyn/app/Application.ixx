@@ -86,10 +86,10 @@ public:
                 Log::info("Renderer resized to: %d*%d", windowWidth, windowHeight);
             }
 
-            // 摄像机更新
+            // 场景更新
             scene.get()->update(inputManager.get(), TARGET_WINDOW_FRAMERATE, windowWidth, windowHeight, window.get());
 
-            // 场景更新
+            // 场景操作
             while (!sceneOperations.empty()) {
                 SceneOperation<SceneT>* operation = sceneOperations.pop();
                 operation->invoke(scene.get());
@@ -109,7 +109,7 @@ public:
 
             // 渲染器帧率显示
             if (index++ % 128 == 0) {
-                Log::info("Renderer: " + toString(renderer->getFPS()) + " FPS");
+                Log::info("Renderer: %d FPS", renderer.get()->getFPS());
             }
 
             // 窗口循环速度控制

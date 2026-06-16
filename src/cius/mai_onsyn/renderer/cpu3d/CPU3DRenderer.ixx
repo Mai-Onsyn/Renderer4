@@ -30,7 +30,7 @@ export class CPU3DRenderer final : public Renderer<Scene3DSnapShot> {
     Int32 tileSize = 0;
 public:
     using SupportedScene = Scene3D;
-    CPU3DRenderer(const Int32 width, const Int32 height, const Int32 threadCount = 12, const Int32 tileSize = 64) : Renderer(width, height), executor(threadCount), tileSize(tileSize) {
+    CPU3DRenderer(const Int32 width, const Int32 height, const Int32 threadCount = 6, const Int32 tileSize = 64) : Renderer(width, height), executor(threadCount), tileSize(tileSize) {
         onResize(width, height);
         executor.start();
     }

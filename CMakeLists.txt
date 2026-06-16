@@ -16,6 +16,7 @@ add_subdirectory(libs/glad)
 
 file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.hpp" "libs/stb_truetype.h")
 file(GLOB_RECURSE MODULES "src/*.ixx")
+#list(REMOVE_ITEM SOURCES "src/cius/mai_onsyn/main.cpp")
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
