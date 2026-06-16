@@ -7,13 +7,15 @@ import RendererPackage2D;
 import Scene2D;
 import Thread;
 import Logger;
-import Color;
 import TextDrawer;
 import BoxDrawer;
 
-export class CPU2DRenderer final : public Renderer<Scene2DSnapShot> {
+template<typename T>
+concept SceneType = std::derived_from<T, Scene2D>;
+
+export template<SceneType SceneT> class CPU2DRenderer final : public Renderer<Scene2DSnapShot> {
 public:
-    using SupportedScene = Scene2D;
+    using SupportedScene = SceneT;
 
     CPU2DRenderer(const Int32 width, const Int32 height) : Renderer(width, height) {
 
@@ -25,7 +27,7 @@ public:
 
     void renderFrame() override {
         auto buffer = tripleBuffer.getRenderBuffer();
-        buffer->clearScreen(Color::White);
+        buffer->clearScreen({240, 240, 240, 255});
 
         snapShotBuffer.swap();
         auto snapShot = snapShotBuffer.getContex();

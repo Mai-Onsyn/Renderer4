@@ -126,4 +126,8 @@ public:
     void addSceneUpdate(SceneOperation<SceneT>* op) {
         sceneOperations.push(op);
     }
+
+    SceneT* getScene() {
+        return scene.get();
+    }
 };

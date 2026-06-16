@@ -9,9 +9,20 @@ import InputManager;
 import Box;
 import Text;
 
-export class Scene2D final : public Scene<Scene2DSnapShot> {
+// export class Scene2D;
+// using UpdateCallback = void (*)(Scene2D* scene,
+//                                 InputManager* input,
+//                                 Int32 tps,
+//                                 Int32 windowWidth,
+//                                 Int32 windowHeight,
+//                                 FramebufferWindow* window);
+
+export class Scene2D : public Scene<Scene2DSnapShot> {
+protected:
     List<Box> boxes{};
     List<Text> texts{};
+
+    // UpdateCallback callback = nullptr;
 public:
     using SnapShot = Scene2DSnapShot;
 
@@ -23,8 +34,14 @@ public:
         texts.emplace_back(text);
     }
 
-    void update(InputManager *input, Int32 tps, Int32 windowWidth, Int32 windowHeight, FramebufferWindow *window) override {
+    // void setUpdateCallback(const UpdateCallback callback) {
+    //     this->callback = callback;
+    // }
 
+    void update(InputManager *input, Int32 tps, Int32 windowWidth, Int32 windowHeight, FramebufferWindow *window) override {
+        // if (callback) {
+        //     callback(this, input, tps, windowWidth, windowHeight, window);
+        // }
     }
 
     [[nodiscard]] Scene2DSnapShot* createSnapShot(Int32 windowWidth, Int32 windowHeight) const override {

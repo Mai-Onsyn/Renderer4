@@ -107,20 +107,22 @@ int main() {
 #define LINK_SET
 
 #ifdef LINK_SET
-import LinkSetSceneDrawer;
+#include <thread>
+import LinkSetScene;
 import Application;
 import CPU2DRenderer;
 import Types;
 import Thread;
+import Logger;
+import Scene2D;
+import InputManager;
+import FramebufferWindow;
+
 
 int main() {
     system("chcp 65001");
-    Application<CPU2DRenderer> app("链表集合运算演示", 1440, 900);
-
-
-
+    Application<CPU2DRenderer<LinkSetScene>> app("链表集合运算演示", 1440, 900);
     app.run();
-
     return 0;
 }
 

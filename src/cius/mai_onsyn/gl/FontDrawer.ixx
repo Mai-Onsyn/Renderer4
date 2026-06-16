@@ -17,7 +17,6 @@ public:
     explicit FontDrawer(const String &path) {
         FILE* file = fopen(path.c_str(), "rb");
         if (!file) {
-            // throw std::runtime_error("Failed to open font file: " + path);
             Log::error("Failed to open font file: %s", path);
             return;
         }
@@ -31,29 +30,22 @@ public:
         fclose(file);
 
         if (readBytes != static_cast<size_t>(fileSize)) {
-            // throw std::runtime_error("Failed to read font file: " + path);
             Log::error("Failed to read font file: %s", path);
             return;
         }
 
-        // --- 核心修改部分 ---
-        // 1. 获取 TTC 文件中第一个字体的偏移量（如果传入的是普通 ttf，该函数也会安全返回 0）
         Int32 fontOffset = stbtt_GetFontOffsetForIndex(fontDataBuffer.get(), 0);
         if (fontOffset < 0) {
-            // throw std::runtime_error("Failed to find font offset inside collection: " + path);
             Log::error("Failed to find font offset inside collection: %s", path);
             return;
         }
 
-        // 2. 传入计算好的偏移量进行初始化
         if (!stbtt_InitFont(&fontInfo, fontDataBuffer.get(), fontOffset)) {
-            // throw std::runtime_error("Failed to initialize font: " + path);
             Log::error("Failed to initialize font: %s", path);
             return;
         }
     }
     ~FontDrawer() = default;
-
 
     alignas(16) UInt8 monoCharBuffer[512 * 512];
     void drawText(
@@ -76,12 +68,44 @@ public:
         const Int32 sWidth = static_cast<Int32>(screenWidth);
         const Int32 sHeight = static_cast<Int32>(screenHeight);
 
-        for (Int64 i = 0; i < textLength; ++i) {
+        Int64 i = 0;
+        while (i < textLength) {
+            // --- 核心修改：UTF-8 解码为 Unicode 码点 ---
+            Int32 codepoint = 0;
+            UInt8 c1 = static_cast<UInt8>(text[i]);
+
+            if (c1 < 0x80) {
+                codepoint = c1;
+                i += 1;
+            } else if ((c1 & 0xE0) == 0xC0) {
+                if (i + 1 >= textLength) break;
+                UInt8 c2 = static_cast<UInt8>(text[i + 1]);
+                codepoint = ((c1 & 0x1F) << 6) | (c2 & 0x3F);
+                i += 2;
+            } else if ((c1 & 0xF0) == 0xE0) {
+                if (i + 2 >= textLength) break;
+                UInt8 c2 = static_cast<UInt8>(text[i + 1]);
+                UInt8 c3 = static_cast<UInt8>(text[i + 2]);
+                codepoint = ((c1 & 0x0F) << 12) | ((c2 & 0x3F) << 6) | (c3 & 0x3F);
+                i += 3;
+            } else if ((c1 & 0xF8) == 0xF0) {
+                if (i + 3 >= textLength) break;
+                UInt8 c2 = static_cast<UInt8>(text[i + 1]);
+                UInt8 c3 = static_cast<UInt8>(text[i + 2]);
+                UInt8 c4 = static_cast<UInt8>(text[i + 3]);
+                codepoint = ((c1 & 0x07) << 18) | ((c2 & 0x3F) << 12) | ((c3 & 0x3F) << 6) | (c4 & 0x3F);
+                i += 4;
+            } else {
+                i += 1; // 无效字节，跳过
+                continue;
+            }
+
+            // --- 后续所有接口一律传入解码后的 codepoint 代替 text[i] ---
             Int32 advance, lsb;
-            stbtt_GetCodepointHMetrics(&fontInfo, text[i], &advance, &lsb);
+            stbtt_GetCodepointHMetrics(&fontInfo, codepoint, &advance, &lsb);
 
             Int32 x0, y0, x1, y1;
-            stbtt_GetCodepointBitmapBox(&fontInfo, text[i], scale, scale, &x0, &y0, &x1, &y1);
+            stbtt_GetCodepointBitmapBox(&fontInfo, codepoint, scale, scale, &x0, &y0, &x1, &y1);
 
             Int32 charW = x1 - x0;
             Int32 charH = y1 - y0;
@@ -93,7 +117,7 @@ public:
                 Int32 charX = currentX + static_cast<Int32>(lsb * scale) + static_cast<Int32>(ox);
                 Int32 charY = baselineY + y0 + static_cast<Int32>(oy);
 
-                stbtt_MakeCodepointBitmap(&fontInfo, monoCharBuffer, charW, charH, charW, scale, scale, text[i]);
+                stbtt_MakeCodepointBitmap(&fontInfo, monoCharBuffer, charW, charH, charW, scale, scale, codepoint);
 
                 Int32 srcStartX = 0;
                 Int32 srcStartY = 0;
@@ -137,8 +161,19 @@ public:
             }
 
             currentX += static_cast<Int32>(advance * scale);
-            if (i + 1 < textLength) {
-                currentX += static_cast<Int32>(stbtt_GetCodepointKernAdvance(&fontInfo, text[i], text[i + 1]) * scale);
+
+            // 字距微调 (Kern) 同样需要处理下一个字符的解码
+            if (i < textLength) {
+                Int32 nextCodepoint = 0;
+                UInt8 n1 = static_cast<UInt8>(text[i]);
+                if (n1 < 0x80) nextCodepoint = n1;
+                else if ((n1 & 0xE0) == 0xC0 && i + 1 < textLength) nextCodepoint = ((n1 & 0x1F) << 6) | (static_cast<UInt8>(text[i + 1]) & 0x3F);
+                else if ((n1 & 0xF0) == 0xE0 && i + 2 < textLength) nextCodepoint = ((n1 & 0x0F) << 12) | ((static_cast<UInt8>(text[i + 1]) & 0x3F) << 6) | (static_cast<UInt8>(text[i + 2]) & 0x3F);
+                else if ((n1 & 0xF0) == 0xF0 && i + 3 < textLength) nextCodepoint = ((n1 & 0x07) << 18) | ((static_cast<UInt8>(text[i + 1]) & 0x3F) << 12) | ((static_cast<UInt8>(text[i + 2]) & 0x3F) << 6) | (static_cast<UInt8>(text[i + 3]) & 0x3F);
+
+                if (nextCodepoint > 0) {
+                    currentX += static_cast<Int32>(stbtt_GetCodepointKernAdvance(&fontInfo, codepoint, nextCodepoint) * scale);
+                }
             }
         }
     }
