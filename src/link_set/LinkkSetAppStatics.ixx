@@ -1,4 +1,5 @@
 module;
+// #include "GLFW/glfw3.h"
 export module LinkSetAppStatics;
 import Types;
 import Color;
@@ -20,4 +21,19 @@ export namespace LinkSetTheme {
     constexpr Float TitleFontPx = 40.0f;
     constexpr Float BodyTextPx = 24.0f;
     constexpr Float BodyTitlePx = 30.0f;
+}
+
+export namespace LLegalInput {
+    constexpr Int32 Enter = 257;    //GLFW_KEY_ENTER
+    constexpr Int32 Backspace = 259;//GLFW_KEY_BACKSPACE
+    constexpr Int32 Space = 32;     //GLFW_KEY_SPACE
+    constexpr Int32 Key_0 = 48;     //GLFW_KEY_0
+    constexpr Int32 Key_9 = 57;     //GLFW_KEY_9
+    constexpr Int32 Num_0 = 320;    //GLFW_KEY_KP_0
+    constexpr Int32 Num_9 = 329;    //GLFW_KEY_KP_9
+    constexpr Int32 F1 = 290;       //GLFW_KEY_F1
+    constexpr Int32 Comma = 44;     //GLFW_KEY_COMMA
+
+    constexpr Int32 MouseLeft = 0;  //GLFW_MOUSE_BUTTON_1
+    constexpr Int32 MouseRight = 2; //GLFW_MOUSE_BUTTON_3
 }

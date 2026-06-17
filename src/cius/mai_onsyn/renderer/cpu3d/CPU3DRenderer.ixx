@@ -22,14 +22,18 @@ import Triangle;
 import RenderPackage3D;
 import Scene3D;
 
-export class CPU3DRenderer final : public Renderer<Scene3DSnapShot> {
+template<typename T>
+concept SceneType = std::derived_from<T, Scene3D>;
+
+export template<SceneType SceneT>
+class CPU3DRenderer final : public Renderer<Scene3DSnapShot> {
     ThreadPool executor;
     UniquePtr<Tile[]> tiles;
     UniquePtr<UniquePtr<Runnable>[]> tasks;
     Int32 tileCount = 0;
     Int32 tileSize = 0;
 public:
-    using SupportedScene = Scene3D;
+    using SupportedScene = SceneT;
     CPU3DRenderer(const Int32 width, const Int32 height, const Int32 threadCount = 6, const Int32 tileSize = 64) : Renderer(width, height), executor(threadCount), tileSize(tileSize) {
         onResize(width, height);
         executor.start();

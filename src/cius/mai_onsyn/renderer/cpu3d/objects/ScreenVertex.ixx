@@ -8,8 +8,9 @@ export struct ScreenVertex {
     Float depth;
     Float invClipW; // 裁剪空间的w的倒数 用于透视矫正插值
     Vector3D normal;
+    Vector2D uv;
 
     ScreenVertex() = default;
-    ScreenVertex(const VectorInt2D& pos, const Float depth, const Float invClipW, const Vector3D& normal):
-        pos(pos), depth(depth), invClipW(invClipW), normal(normal) {}
+    ScreenVertex(const VectorInt2D& pos, const Float depth, const Float invClipW, const Vector3D& normal, const Vector2D& uv) :
+        pos(pos), depth(depth), invClipW(invClipW), normal(normal), uv(uv) {}
 };

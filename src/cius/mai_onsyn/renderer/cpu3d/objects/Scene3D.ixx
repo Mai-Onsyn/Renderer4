@@ -107,7 +107,7 @@ public:
     }
 
     void update(InputManager* input, const Int32 tps, Int32 windowWidth, Int32 windowHeight, FramebufferWindow* window) override {
-        rotateTest();
+        // rotateTest();
         updateCamera(window, input, tps);
     }
 

@@ -60,4 +60,15 @@ public:
         }
         cv.notify_all();
     }
+
+
+    void clear() {
+        {
+            LockGuard lock(mtx);
+            while (!queue.empty()) {
+                queue.pop();
+            }
+        }
+        cv.notify_all();
+    }
 };

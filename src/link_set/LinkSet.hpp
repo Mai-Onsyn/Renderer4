@@ -3,7 +3,7 @@
 #define SETCALCULATOR_SET_HPP
 #include <memory>
 #include <sstream>
-#include <functional>
+// #include <functional>
 
 template<typename T>
 struct LinkNode {
@@ -25,14 +25,7 @@ class LinkSet {
 public:
     LinkSet(): size(0), cmp(Comparator()) {}
     ~LinkSet() {
-        if (!isEmpty()) {
-            LinkNode<T> *current = head.next;
-            while (current != nullptr) {
-                LinkNode<T> *next = current->next;
-                delete current;
-                current = next;
-            }
-        }
+        clear();
     }
 
     template<typename... Args>
@@ -60,6 +53,23 @@ public:
             f(i, current->data);
             current = current->next;
         }
+    }
+
+    void clear() {
+        if (!isEmpty()) {
+            LinkNode<T> *current = head.next;
+            while (current != nullptr) {
+                LinkNode<T> *next = current->next;
+                delete current;
+                current = next;
+            }
+            head.next = nullptr;
+            size = 0;
+        }
+    }
+
+    void insertAll(LinkSet<T>& other) {
+        other.forEach([this](const T& data) { insert(data); });
     }
 
     /**

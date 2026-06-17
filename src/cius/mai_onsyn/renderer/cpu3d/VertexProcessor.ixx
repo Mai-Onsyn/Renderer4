@@ -10,10 +10,12 @@ import Vertex;
 import Vectors;
 import RenderPackage3D;
 import Logger;
+import Texture;
 
 struct ClipVertex {
     Vector4D pos;
     Vector3D normal;
+    Vector2D uv;
 
     String toString() const {
         return "ClipVertex(pos=" + pos.toString() + ", normal=" + normal.toString() + ")";
@@ -24,7 +26,8 @@ export namespace VertexProcessor {
     ClipVertex interpolate(const ClipVertex& v1, const ClipVertex& v2, const Float t) {
         return {
             v1.pos * (1 - t) + v2.pos * t,
-            v1.normal * (1 - t) + v2.normal * t
+            v1.normal * (1 - t) + v2.normal * t,
+            v1.uv * (1 - t) + v2.uv * t
         };
     }
 
@@ -134,7 +137,7 @@ export namespace VertexProcessor {
         return temp2;
     }
 
-    ScreenTriangle toScreenTriangle(const ClipVertex& v1, const ClipVertex& v2, const ClipVertex& v3, const Matrix4x4& viewPortMatrix) {
+    ScreenTriangle toScreenTriangle(const ClipVertex& v1, const ClipVertex& v2, const ClipVertex& v3, const Matrix4x4& viewPortMatrix, Texture* texture) {
         const Vector4D v1ndc{v1.pos.x / v1.pos.w, v1.pos.y / v1.pos.w, v1.pos.z / v1.pos.w, 1.0f};
         const Vector4D v2ndc{v2.pos.x / v2.pos.w, v2.pos.y / v2.pos.w, v2.pos.z / v2.pos.w, 1.0f};
         const Vector4D v3ndc{v3.pos.x / v3.pos.w, v3.pos.y / v3.pos.w, v3.pos.z / v3.pos.w, 1.0f};
@@ -143,10 +146,13 @@ export namespace VertexProcessor {
         const Vector4D v2vp = viewPortMatrix * v2ndc;
         const Vector4D v3vp = viewPortMatrix * v3ndc;
 
+        // Log::debug("v1u: %.2f", v1.uv.x);
+
         return {
-            {{static_cast<Int64>(v1vp.x), static_cast<Int64>(v1vp.y)}, 1.0f - v1ndc.z, v1.pos.w,  v1.normal},
-            {{static_cast<Int64>(v2vp.x), static_cast<Int64>(v2vp.y)}, 1.0f - v2ndc.z, v2.pos.w,  v2.normal},
-            {{static_cast<Int64>(v3vp.x), static_cast<Int64>(v3vp.y)}, 1.0f - v3ndc.z, v3.pos.w,  v3.normal}
+            {{static_cast<Int64>(v1vp.x), static_cast<Int64>(v1vp.y)}, 1.0f - v1ndc.z, 1 / v1.pos.w,  v1.normal, v1.uv},
+            {{static_cast<Int64>(v2vp.x), static_cast<Int64>(v2vp.y)}, 1.0f - v2ndc.z, 1 / v2.pos.w,  v2.normal, v2.uv},
+            {{static_cast<Int64>(v3vp.x), static_cast<Int64>(v3vp.y)}, 1.0f - v3ndc.z, 1 / v3.pos.w,  v3.normal, v3.uv},
+            texture
         };
     }
 
@@ -175,6 +181,7 @@ export namespace VertexProcessor {
             for (UInt32 i = 0; i < pkg.vertexCount; i++) {
                 clipSpaceVertex[i].pos = mvp * vertexes[i].pos;
                 clipSpaceVertex[i].normal = normalMatrix * vertexes[i].normal;
+                clipSpaceVertex[i].uv = vertexes[i].uv;
             }
 
             for (UInt32 i = 0; i < pkg.triangleCount; i++) {
@@ -221,7 +228,7 @@ export namespace VertexProcessor {
                     satisfyV1yBottom && satisfyV2yBottom && satisfyV3yBottom &&
                     satisfyV1yTop && satisfyV2yTop && satisfyV3yTop
                     ) {
-                    result.push_back(toScreenTriangle(v1, v2, v3, viewPortMatrix));
+                    result.push_back(toScreenTriangle(v1, v2, v3, viewPortMatrix, triangle.texture));
                 }
                 // 需要裁剪
                 else {
@@ -229,33 +236,33 @@ export namespace VertexProcessor {
                     switch (const List<ClipVertex> clippedVertices = clip(v1, v2, v3); clippedVertices.size()) {
                         case 0: break;
                         case 3: {
-                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[1], clippedVertices[2], viewPortMatrix));
+                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[1], clippedVertices[2], viewPortMatrix, triangle.texture));
                             break;
                         }
                         case 4: {
-                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[1], clippedVertices[2], viewPortMatrix));
-                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[2], clippedVertices[3], viewPortMatrix));
+                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[1], clippedVertices[2], viewPortMatrix, triangle.texture));
+                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[2], clippedVertices[3], viewPortMatrix, triangle.texture));
                             break;
                         }
                         case 5: {
-                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[1], clippedVertices[2], viewPortMatrix));
-                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[2], clippedVertices[3], viewPortMatrix));
-                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[3], clippedVertices[4], viewPortMatrix));
+                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[1], clippedVertices[2], viewPortMatrix, triangle.texture));
+                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[2], clippedVertices[3], viewPortMatrix, triangle.texture));
+                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[3], clippedVertices[4], viewPortMatrix, triangle.texture));
                             break;
                         }
                         case 6: {
-                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[1], clippedVertices[2], viewPortMatrix));
-                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[2], clippedVertices[3], viewPortMatrix));
-                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[3], clippedVertices[4], viewPortMatrix));
-                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[4], clippedVertices[5], viewPortMatrix));
+                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[1], clippedVertices[2], viewPortMatrix, triangle.texture));
+                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[2], clippedVertices[3], viewPortMatrix, triangle.texture));
+                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[3], clippedVertices[4], viewPortMatrix, triangle.texture));
+                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[4], clippedVertices[5], viewPortMatrix, triangle.texture));
                             break;
                         }
                         case 7: {
-                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[1], clippedVertices[2], viewPortMatrix));
-                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[2], clippedVertices[3], viewPortMatrix));
-                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[3], clippedVertices[4], viewPortMatrix));
-                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[4], clippedVertices[5], viewPortMatrix));
-                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[5], clippedVertices[6], viewPortMatrix));
+                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[1], clippedVertices[2], viewPortMatrix, triangle.texture));
+                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[2], clippedVertices[3], viewPortMatrix, triangle.texture));
+                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[3], clippedVertices[4], viewPortMatrix, triangle.texture));
+                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[4], clippedVertices[5], viewPortMatrix, triangle.texture));
+                            result.push_back(toScreenTriangle(clippedVertices[0], clippedVertices[5], clippedVertices[6], viewPortMatrix, triangle.texture));
                             break;
                         }
                         default: break; // 极端情况 给了

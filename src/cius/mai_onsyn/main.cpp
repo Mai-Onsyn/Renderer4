@@ -1,7 +1,7 @@
 #include <iostream>
 #include <memory>
 
-// #define USE_2D
+#define USE_3D
 
 #ifdef USE_3D
 import Types;
@@ -15,16 +15,22 @@ import Light;
 import Logger;
 import CPU3DRenderer;
 import Scene;
+import Texture;
 
-void makeTestScene(Application<CPU3DRenderer>* app) {
+void makeTestScene(Application<CPU3DRenderer<Scene3D>>* app) {
     const auto task = makeSceneOperation<Scene3D>([](Scene3D* scene) {
         String localData = "Hello";
         Transform triangle{};
         Mesh trianglePiece;
-        trianglePiece.vertices.emplace_back(Vertex{{-1.732, -1, 0}, {0, 0, -1}});
-        trianglePiece.vertices.emplace_back(Vertex{{1.732, -1, 0}, {0, 0, -1}});
-        trianglePiece.vertices.emplace_back(Vertex{{0, 2, 0}, {0, 0, -1}});
-        trianglePiece.triangles.emplace_back(0, 1, 2);
+        UniquePtr<Texture> texture(new Texture("./assets/textures/uv_map_test.png"));
+        // trianglePiece.vertices.emplace_back(Vertex{{-1.732, -1, 0}, {0, 0, -1}, {0, 0.866}});
+        // trianglePiece.vertices.emplace_back(Vertex{{1.732, -1, 0}, {0, 0, -1}, {1, 0.866}});
+        // trianglePiece.vertices.emplace_back(Vertex{{0, 2, 0}, {0, 0, -1}, {0.5, 0}});
+        trianglePiece.vertices.emplace_back(Vertex{{-1, 1, 0}, {0, 0, -1}, {0, 0}});
+        trianglePiece.vertices.emplace_back(Vertex{{-1, -1, 0}, {0, 0, -1}, {0, 1}});
+        trianglePiece.vertices.emplace_back(Vertex{{1, -1, 0}, {0, 0, -1}, {1, 1}});
+        trianglePiece.triangles.emplace_back(0, 1, 2, texture.get());
+        trianglePiece.texture.push_back(move(texture));
         Entity testEntity{"Test Entity", move(trianglePiece), move(triangle)};
         scene->addEntity(move(testEntity));
 
@@ -38,7 +44,7 @@ void makeTestScene(Application<CPU3DRenderer>* app) {
 
 int main() {
     system("chcp 65001");
-    Application<CPU3DRenderer> app("DisplayWindow", 1440, 900);
+    Application<CPU3DRenderer<Scene3D>> app("DisplayWindow", 1440, 900);
     makeTestScene(&app);
     app.run();
 
@@ -104,7 +110,7 @@ int main() {
 
 #endif
 
-#define LINK_SET
+// #define LINK_SET
 
 #ifdef LINK_SET
 #include <thread>

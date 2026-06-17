@@ -16,16 +16,9 @@ import LinkSetAppStatics;
 import Format;
 import Vectors;
 import Functions;
+import SetOperator;
 
 using namespace Graphics2D;
-
-enum class OpState : UInt8 {
-    INPUT_A, INPUT_B, FIND, INSERT, INTERSECT, UNION, DIFFERENCE, SYMMETRIC_DIFF, NONE
-};
-
-enum class OpTarget : UInt8 {
-    SET_A, SET_B, RESULT
-};
 
 export class LinkSetScene final : public Scene2D {
     OpState opState = OpState::FIND;
@@ -37,16 +30,52 @@ export class LinkSetScene final : public Scene2D {
     Int16 frameFactor = 0;
 
     List<String> opNames{"插入", "删除", "覆盖","查找", "求交集", "求并集", "求差集", "对称差"};
+    String opTargetNames[2] = {"对A操作", "对B操作"};
 
-    void drawButton(
-        Float width,
-        Float height,
-        Float x,
-        Float y,
-        const std::string& text,
-        const std::string& keyText,
-        bool active
-    ) {
+    char currentInputBuffer[1024] = {};
+    Int32 inputBufferLength = 0;
+    List<Int32> elementsToFind;
+
+    void handleInput(InputManager* input) {
+        while (input->hasKeyInput() && inputBufferLength < 1023) {
+            const Int32 key = input->consumeKeyInput();
+
+            if (key == LLegalInput::Enter) {
+                SetOperator::executeOperation({setA, setB, setOptResult, opState, opTarget, String(currentInputBuffer), elementsToFind});
+                currentInputBuffer[0] = '\0';
+                inputBufferLength = 0;
+            }
+            else if (key == LLegalInput::Backspace && inputBufferLength > 0) {
+                currentInputBuffer[--inputBufferLength] = '\0';
+            }
+            else if (key == LLegalInput::Space) {
+                currentInputBuffer[inputBufferLength++] = ' ';
+                currentInputBuffer[inputBufferLength] = '\0';
+            }
+            else if (key == LLegalInput::Comma) {
+                currentInputBuffer[inputBufferLength++] = ',';
+                currentInputBuffer[inputBufferLength] = '\0';
+            }
+            else if (key >= LLegalInput::Key_0 && key <= LLegalInput::Key_9) {
+                currentInputBuffer[inputBufferLength++] = '0' + key - LLegalInput::Key_0;
+                currentInputBuffer[inputBufferLength] = '\0';
+            }
+            else if (key >= LLegalInput::Num_0 && key <= LLegalInput::Num_9) {
+                currentInputBuffer[inputBufferLength++] = '0' + key - LLegalInput::Num_0;
+                currentInputBuffer[inputBufferLength] = '\0';
+            }
+
+            if (key >= LLegalInput::F1 && key < LLegalInput::F1 + 10) {
+                if (Int32 fKey = key - LLegalInput::F1; fKey < 8) {
+                    opState = static_cast<OpState>(fKey);
+                } else {
+                    opTarget = static_cast<OpTarget>(fKey - 8);
+                }
+            }
+        }
+    }
+
+    void drawButton(Float width, Float height, Float x, Float y, const String& text, const String& keyText, const Boolean active) {
         Box base{
             Rect2D{{x, y}, {width, height}},
             Alignment::TopLeft,
@@ -75,6 +104,7 @@ export class LinkSetScene final : public Scene2D {
         texts.push_back(std::move(optName));
         texts.push_back(std::move(optKey));
     }
+
     /**
      * 占用150像素高度
      * @param windowWidth 窗口宽度
@@ -112,7 +142,6 @@ export class LinkSetScene final : public Scene2D {
                 static_cast<Int32>(opState) == i
             );
         }
-        String opTargetNames[2] = {"对A操作", "对B操作"};
         for (Int32 i = 0; i < 2; i++) {
             const Vector2D topLeft{btnStartX + (i + opNames.size()) * (btnWidth + btnPadding) + 20, btnStartY};
             drawButton(
@@ -127,12 +156,12 @@ export class LinkSetScene final : public Scene2D {
         }
     }
 
-    void drawSetRow(const Float startY, const Float rowHeight, const LinkSet<Int32> &set, const Color &primary, const String &name) {
+    void drawSetRow(const Float startY, const Float rowHeight, const LinkSet<Int32> &set, const Color &primary, const String &name, const OpTarget &target) {
         Float bodyHeight = 100;
         Float horizontalPadding = 40;
         Float bodyStartY = startY + (rowHeight - bodyHeight) / 2;
         Box mark{
-            Rect2D{{horizontalPadding, bodyStartY}, {8, bodyHeight}},
+            Rect2D{{horizontalPadding, bodyStartY}, {6, bodyHeight}},
             Alignment::TopLeft,
             primary
         };
@@ -167,10 +196,19 @@ export class LinkSetScene final : public Scene2D {
             boxes.push_back(move(connectWire));
 
             set.forEachIndexed([&](const Int32& idx, const Int32& data) {
+                Color elementBaseColor = {222, 222, 222};
+                if (opTarget == target) {
+                    for (const Int32 elementToFind : elementsToFind) {
+                        if (elementToFind == data) {
+                            elementBaseColor = primary;
+                            break;
+                        }
+                    }
+                }
                 Box elementBase{
                     Rect2D{{contentStartX, contentStartY}, {elementSize, elementSize}},
                     Alignment::TopLeft,
-                    {222, 222, 222}
+                    elementBaseColor
                 };
                 Text elementText{
                     toString(data),
@@ -214,13 +252,19 @@ export class LinkSetScene final : public Scene2D {
         Float brushEndY = windowHeight - 200 - verticalPadding;
         Float heightPerRow = (brushEndY - brushStartY) / 3;
 
-        drawSetRow(brushStartY, heightPerRow, setA, LinkSetTheme::PrimaryA, "集合A");
+        drawSetRow(brushStartY, heightPerRow, setA, LinkSetTheme::PrimaryA, "集合A", OpTarget::SET_A);
         drawHorizontalDivider(windowWidth, 40, brushStartY + heightPerRow, 2);
-        drawSetRow(brushStartY + heightPerRow, heightPerRow, setB, LinkSetTheme::PrimaryB, "集合B");
+        drawSetRow(brushStartY + heightPerRow, heightPerRow, setB, LinkSetTheme::PrimaryB, "集合B", OpTarget::SET_B);
         drawHorizontalDivider(windowWidth, 40, brushStartY + heightPerRow * 2, 2);
-        drawSetRow(brushStartY + heightPerRow * 2, heightPerRow, setOptResult, LinkSetTheme::PrimaryC, "运算结果");
+        drawSetRow(brushStartY + heightPerRow * 2, heightPerRow, setOptResult, LinkSetTheme::PrimaryC, "运算结果", OpTarget::NONE);
     }
 
+    /**
+     * 占用200像素高度
+     * @param text 输入文本
+     * @param windowWidth 窗口宽度
+     * @param windowHeight 窗口高度
+     */
     void drawFooter(const String& text, const Float windowWidth, const Float windowHeight) {
         Float footerStartY = windowHeight - 200;
         Box footer{
@@ -242,7 +286,7 @@ export class LinkSetScene final : public Scene2D {
             texts.push_back(move(inputBufferTip));
 
             Text inputBuffer{
-                Stringf::format("%s%s", text, frameFactor / 64 % 2 == 0 ? "_" : " "),
+                Stringf::format("%s%s", text, frameFactor / 50 % 2 == 0 ? "_" : " "),
                 {200, footerStartY + 50},
                 Alignment::CenterLeft,
                 LinkSetTheme::BodyTextPx + 2,
@@ -278,6 +322,8 @@ public:
         boxes.clear();
         texts.clear();
 
+        handleInput(input);
+
         Box backGround{
             Rect2D{{0, 0},{static_cast<Float>(windowWidth), static_cast<Float>(windowHeight)}},
             Alignment::TopLeft,
@@ -287,7 +333,7 @@ public:
 
         drawNavigation(windowWidth);
         drawBody(windowWidth, windowHeight);
-        drawFooter("111 22 3", windowWidth, windowHeight);
+        drawFooter(String(currentInputBuffer), windowWidth, windowHeight);
 
         frameFactor++;
     }

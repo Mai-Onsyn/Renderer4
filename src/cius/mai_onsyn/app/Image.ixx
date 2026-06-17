@@ -1,8 +1,11 @@
 module;
 #include <fstream>
-#include <vector>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 export module Image;
 import Types;
+import Color;
+import Logger;
 
 #pragma pack(push, 1)
 
@@ -35,13 +38,33 @@ struct BMPInfoHeader {
 export class Image {
     UInt8Buffer colorMap;
 public:
-    UInt32 width, height;
-    Image(const UInt32 width, const UInt32 height) : width(width), height(height) {
+    Int32 width, height;
+    Image(const Int32 width, const Int32 height) : width(width), height(height) {
         colorMap = makeUInt8Buffer(width * height * 4);
     }
 
     [[nodiscard]] UInt8* getBuffer() const {
         return colorMap.get();
+    }
+
+    [[nodiscard]] Color pixelAt(const Int32 x, const Int32 y) const {
+        // Log::debug("x: %.2f, y: %.2f", width, height);
+        // Log::debug("ColorMap: %b", colorMap.get() == nullptr);
+        const Int32 offset = (y * width + x) * 4;
+        return Color{colorMap[offset], colorMap[offset + 1], colorMap[offset + 2], colorMap[offset + 3]};
+    }
+
+    static Image fromFile(const String& path) {
+        Int32 width, height, channels;
+        const auto data = stbi_load(path.c_str(), &width, &height, &channels, 4);
+        if (!data) {
+            Log::error("Failed to load image: %s", path);
+            return Image{0, 0};
+        }
+        Image img{width, height};
+        memcpy(img.getBuffer(), data, width * height * 4);
+        stbi_image_free(data);
+        return img;
     }
 
     void save(const String& path) const {

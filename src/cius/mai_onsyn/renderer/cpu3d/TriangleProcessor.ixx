@@ -21,7 +21,7 @@ export namespace TriangleProcessor {
             tiles[i].triangleIndices.clear();
         }
         for (UInt32 tIdx = 0; tIdx < triangles.size(); tIdx++) {
-            const auto& [v1, v2, v3] = triangles[tIdx];
+            const auto& [v1, v2, v3, texture] = triangles[tIdx];
             const Int32 xMin = max(static_cast<Int64>(0),       min(v1.pos.x, min(v2.pos.x, v3.pos.x)));
             const Int32 xMax = min(static_cast<Int64>(screenW), max(v1.pos.x, max(v2.pos.x, v3.pos.x)));
             const Int32 yMin = max(static_cast<Int64>(0),       min(v1.pos.y, min(v2.pos.y, v3.pos.y)));

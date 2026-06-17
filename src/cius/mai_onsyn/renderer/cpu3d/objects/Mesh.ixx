@@ -5,10 +5,12 @@ import Vectors;
 import Vertex;
 import Triangle;
 import Format;
+import Texture;
 
 export struct Mesh {
     List<Vertex> vertices{};
     List<Triangle> triangles{};
+    List<UniquePtr<Texture>> texture{};
 
     Mesh() = default;
     Mesh(const Mesh&) = default;
