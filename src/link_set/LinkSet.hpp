@@ -3,7 +3,6 @@
 #define SETCALCULATOR_SET_HPP
 #include <memory>
 #include <sstream>
-// #include <functional>
 
 template<typename T>
 struct LinkNode {
@@ -177,8 +176,21 @@ public:
      * @param set2 B集合
      * @return 交集
      */
-    static LinkSet<T> intersectionSet(const LinkSet<T> &set1, const LinkSet<T> &set2) {
+    static LinkSet<T> intersectionSet(LinkSet<T> &set1, LinkSet<T> &set2) {
         LinkSet<T> result{};
+        auto cmp = set1.getComparator();
+        LinkNode<T>* p1 = set1.getHead().next;
+        LinkNode<T>* p2 = set2.getHead().next;
+        
+        while (p1 != nullptr && p2 != nullptr) {
+            if (cmp(p1->data, p2->data)) p1 = p1->next;
+            else if (cmp(p2->data, p1->data)) p2 = p2->next;
+            else {
+                result.insert(p1->data);
+                p1 = p1->next;
+                p2 = p2->next;
+            }
+        }
         return result;
     }
 

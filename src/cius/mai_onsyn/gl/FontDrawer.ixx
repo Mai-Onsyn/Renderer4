@@ -15,10 +15,27 @@ export class FontDrawer {
     stbtt_fontinfo fontInfo{};
 public:
     explicit FontDrawer(const String &path) {
-        FILE* file = fopen(path.c_str(), "rb");
+        List<String> availableFontPath = {
+            path,
+            "C:/Windows/Fonts/msyh.ttc",
+            "C:/Windows/Fonts/simhei.ttf",
+            "C:/Windows/Fonts/simsun.ttc",
+            "C:/Windows/Fonts/arial.ttf"
+        };
+        Int32 tryLoad = path.empty();
+        fontFallback: {
+                if (tryLoad >= availableFontPath.size()) {
+                    throw RuntimeError("Failed to load font");
+                }
+                if (tryLoad > 0 && !path.empty()) {
+                    Log::warn("Failed to load font %s, trying fallback %s", availableFontPath[tryLoad - 1], availableFontPath[tryLoad]);
+                }
+            }
+
+        FILE* file = fopen(availableFontPath[tryLoad++].c_str(), "rb");
         if (!file) {
             Log::error("Failed to open font file: %s", path);
-            return;
+            goto fontFallback;
         }
 
         fseek(file, 0, SEEK_END);
@@ -31,18 +48,18 @@ public:
 
         if (readBytes != static_cast<size_t>(fileSize)) {
             Log::error("Failed to read font file: %s", path);
-            return;
+            goto fontFallback;
         }
 
         Int32 fontOffset = stbtt_GetFontOffsetForIndex(fontDataBuffer.get(), 0);
         if (fontOffset < 0) {
             Log::error("Failed to find font offset inside collection: %s", path);
-            return;
+            goto fontFallback;
         }
 
         if (!stbtt_InitFont(&fontInfo, fontDataBuffer.get(), fontOffset)) {
             Log::error("Failed to initialize font: %s", path);
-            return;
+            goto fontFallback;
         }
     }
     ~FontDrawer() = default;

@@ -9,7 +9,6 @@ export module FramebufferWindow;
 import FrameBuffer;
 
 export class FramebufferWindow {
-    // --- 极简类型擦除容器：用于无损存储任何带有捕获/不带捕获的 Lambda ---
     struct KeyInvokerBase         { virtual ~KeyInvokerBase() = default;         virtual void invoke(int, int, int, int) const = 0; };
     struct MousePosInvokerBase    { virtual ~MousePosInvokerBase() = default;    virtual void invoke(double, double) const = 0; };
     struct MouseButtonInvokerBase { virtual ~MouseButtonInvokerBase() = default; virtual void invoke(int, int, int) const = 0; };
@@ -107,7 +106,6 @@ public:
         glfwSwapInterval(vsync ? 1 : 0);
     }
 
-    // --- 改为现代模板接收器：支持引用的捕获或值捕获的 Lambda ---
     template<typename F> void setKeyCallback(F&& cb) { m_keyCb = std::make_unique<KeyInvoker<std::decay_t<F>>>(std::forward<F>(cb)); }
     template<typename F> void setMousePosCallback(F&& cb) { m_mousePosCb = std::make_unique<MousePosInvoker<std::decay_t<F>>>(std::forward<F>(cb)); }
     template<typename F> void setMouseButtonCallback(F&& cb) { m_mouseButtonCb = std::make_unique<MouseButtonInvoker<std::decay_t<F>>>(std::forward<F>(cb)); }

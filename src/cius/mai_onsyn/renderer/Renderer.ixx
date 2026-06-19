@@ -32,7 +32,7 @@ protected:
     Boolean resizeSignal = false;
     Mutex mtx;
     ConditionVariable cv;
-    FontDrawer fontDrawer{""};
+    FontDrawer fontDrawer{"assets/fonts/AaDeGuLaJian-2.ttf"};
     Image* textBuffer = new Image(800, 600);
 
     virtual void renderFrame() = 0;
@@ -43,7 +43,6 @@ public:
     Renderer(const Int32 width, const Int32 height):
         tripleBuffer(width, height),
         depthBuffer(makeFloatBuffer(width * height)),
-        fontDrawer("assets/fonts/msyh.ttf"),
         width(width), height(height) {}
 
     virtual ~Renderer() {
