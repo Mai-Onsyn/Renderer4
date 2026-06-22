@@ -16,6 +16,7 @@ import Logger;
 import CPU3DRenderer;
 import Scene;
 import Texture;
+import OBJ;
 
 void makeTestScene(Application<CPU3DRenderer<Scene3D>>* app) {
     const auto task = makeSceneOperation<Scene3D>([](Scene3D* scene) {
@@ -36,10 +37,18 @@ void makeTestScene(Application<CPU3DRenderer<Scene3D>>* app) {
 
         Light light{"World Light", {0, 100, 0}, {255, 255, 255, 255}};
         scene->addLight(move(light));
+    });
+    app->addSceneUpdate(task);
+    const auto task2 = makeSceneOperation<Scene3D>([](Scene3D* scene) {
+        Transform triangle{};
+        Mesh mesh = OBJ::toMesh(OBJ::load("./assets/meshes/mika/mika test.obj"));
+
+        Entity testEntity{"Misono Mika", move(mesh), move(triangle)};
+        scene->addEntity(move(testEntity));
 
         Log::debug(scene->toString());
     });
-    app->addSceneUpdate(task);
+    app->addSceneUpdate(task2);
 }
 
 int main() {

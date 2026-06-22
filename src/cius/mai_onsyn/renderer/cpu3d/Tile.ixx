@@ -105,9 +105,14 @@ export class TileTask final : public Runnable {
         const Boolean unhorizontal_AB = v1.pos.y != v2.pos.y;
         const Boolean unhorizontal_BC = v2.pos.y != v3.pos.y;
 
-        auto texturePixels = reinterpret_cast<UInt32*>(triangle.texture->getData());
-        Int32 textureW = triangle.texture->getWidth();
-        Int32 textureH = triangle.texture->getHeight();
+        UInt32* texturePixels;
+        Int32 textureW;
+        Int32 textureH;
+        if (triangle.texture) {
+            texturePixels = reinterpret_cast<UInt32*>(triangle.texture->getData());
+            textureW = triangle.texture->getWidth();
+            textureH = triangle.texture->getHeight();
+        }
         // 扫描线填充
         for (Int64 y = ys; y < ye; y++) {
             Int64 xa, xb = v1.pos.x + (v3.pos.x - v1.pos.x) * (y - v1.pos.y) / (v3.pos.y - v1.pos.y);
@@ -154,14 +159,15 @@ export class TileTask final : public Runnable {
 
                 if (depth >= depthRow[x]) {
                     Fragment fragment;
-                    if (triangle.texture) {
+                    if (texturePixels) {
                         Int32 tx = std::min(static_cast<Int32>(u * textureW), textureW - 1);
                         Int32 ty = std::min(static_cast<Int32>(v * textureH), textureH - 1);
-                        Int32 offset = ty * textureW + tx;
+                        Int32 offset = std::clamp(ty * textureW + tx, 0, textureW * textureH - 1);
                         fragment.uvColor = std::bit_cast<Color>(texturePixels[offset]);
                         // fragment.uvColor = triangle.texture->uvAt(u, v);
                     }
                     else fragment.uvColor = {static_cast<UInt8>(isBorder ? 255 : 0), 64, 96, 255};
+                    // fragment.uvColor = {255, 255, 255, 255};
                     fragment.depth = depth;
                     const auto [r, g, b, a] = Shader::fragmentShader(fragment);
 

@@ -63,8 +63,12 @@ public:
         const auto frameBuffer = tripleBuffer.getRenderBuffer();
         frameBuffer->clearScreen({135, 206, 250, 255});
 
+        Int64 vertexTransformStart = millisTime();
         const List<ScreenTriangle>& screenTriangles = VertexProcessor::process(sceneSnapShot);
+        Int64 binningStart = millisTime();
         TriangleProcessor::binning(tiles.get(), screenTriangles, tileCount, tileSize, width, height);
+
+        Log::debug("Vertex transform cost %d\nbinning cost %d", binningStart - vertexTransformStart, millisTime() - binningStart);
 
         const UInt64 timeFactor = millisTime();
         for (Int32 i = 0; i < tileCount; i++) {

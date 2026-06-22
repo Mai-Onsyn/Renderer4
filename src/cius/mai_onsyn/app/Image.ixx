@@ -40,8 +40,10 @@ export class Image {
 public:
     Int32 width, height;
     Image(const Int32 width, const Int32 height) : width(width), height(height) {
-        colorMap = makeUInt8Buffer(width * height * 4);
+        if (width * height > 0) colorMap = makeUInt8Buffer(width * height * 4);
+        else colorMap = nullptr;
     }
+    Image(): colorMap(nullptr), width(0), height(0) {}
 
     [[nodiscard]] UInt8* getBuffer() const {
         return colorMap.get();
@@ -55,15 +57,18 @@ public:
     }
 
     static Image fromFile(const String& path) {
+        if (path.empty()) return Image{0, 0};
+        Log::debug("Loading image from %s", path);
         Int32 width, height, channels;
         const auto data = stbi_load(path.c_str(), &width, &height, &channels, 4);
-        if (!data) {
+        if (!data && width * height == 0) {
             Log::error("Failed to load image: %s", path);
             return Image{0, 0};
         }
         Image img{width, height};
         memcpy(img.getBuffer(), data, width * height * 4);
         stbi_image_free(data);
+        Log::info("Successfully load %d*%d image from %s", width, height, path);
         return img;
     }
 

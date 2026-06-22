@@ -34,3 +34,36 @@ export void avx2Fill(UInt8* buffer, const UInt32 start, const Int32 value, const
 export void avx2Fill(UInt8* buffer, const UInt32 start, const Color c, const UInt32 size) {
     avx2Fill(buffer, start, c.a << 24 | c.b << 16 | c.g << 8 | c.r, size);
 }
+
+export Boolean startWith(const String& str, const String& prefix) {
+    return str.substr(0, prefix.length()) == prefix;
+}
+
+export List<String> split(const String& str, const String& delimiter) {
+    List<String> result;
+    if (str.empty()) {
+        return result;
+    }
+    if (delimiter.empty()) {
+        result.push_back(str);
+        return result;
+    }
+
+    UInt64 start = 0;
+    UInt64 end = 0;
+    while ((end = str.find(delimiter, start)) != String::npos) {
+        result.push_back(str.substr(start, end - start));
+        start = end + delimiter.length();
+    }
+    result.push_back(str.substr(start));
+    return result;
+}
+
+export String trim(const String& str) {
+    const UInt64 start = str.find_first_not_of(" \t\n\r");
+    if (start == String::npos) {
+        return "";
+    }
+    const UInt64 end = str.find_last_not_of(" \t\n\r");
+    return str.substr(start, end - start + 1);
+}

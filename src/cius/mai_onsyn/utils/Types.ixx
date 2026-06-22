@@ -51,3 +51,6 @@ export template<typename T> using SharedPtr = std::shared_ptr<T>;
 export using std::make_unique;
 export using std::make_unique_for_overwrite;
 export using std::move;
+export using std::stoi;
+export using std::stof;
+export using std::stoll;
