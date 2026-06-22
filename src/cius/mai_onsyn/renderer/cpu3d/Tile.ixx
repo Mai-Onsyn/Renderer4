@@ -109,7 +109,7 @@ export class TileTask final : public Runnable {
         Int32 textureW;
         Int32 textureH;
         if (triangle.texture) {
-            texturePixels = reinterpret_cast<UInt32*>(triangle.texture->getData());
+            texturePixels = reinterpret_cast<UInt32*>(triangle.texture->getKdData());
             textureW = triangle.texture->getWidth();
             textureH = triangle.texture->getHeight();
         }

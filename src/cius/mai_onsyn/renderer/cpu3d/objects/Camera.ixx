@@ -15,7 +15,7 @@ export struct Camera {
     Float fov;
     const Float near = 0.1;
 
-    Camera() : pos({0, 0, 0}), vx({1, 0, 0}), vy({0, 1, 0}), vz({0, 0, 1}), fov(70.0f) {}
+    Camera() : pos({0, 35, -60}), vx({1, 0, 0}), vy({0, 1, 0}), vz({0, 0, 1}), fov(70.0f) {}
 
     void moveX(const float distance) {
         pos += vx * distance;

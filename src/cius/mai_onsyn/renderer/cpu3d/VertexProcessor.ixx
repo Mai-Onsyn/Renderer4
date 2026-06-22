@@ -1,6 +1,7 @@
 module;
 #include <vector>
 #include <string>
+#include <immintrin.h>
 export module VertexProcessor;
 import Types;
 import Matrix;
@@ -11,6 +12,10 @@ import Vectors;
 import RenderPackage3D;
 import Logger;
 import Texture;
+import Time;
+import RenderPackage3D;
+import Thread;
+import ThreadPool;
 
 struct ClipVertex {
     Vector4D pos;
@@ -22,6 +27,12 @@ struct ClipVertex {
     }
 };
 
+struct TransformRange {
+    UInt32 pkgIndex;
+    UInt32 start;
+    UInt32 end;
+};
+
 export namespace VertexProcessor {
     ClipVertex interpolate(const ClipVertex& v1, const ClipVertex& v2, const Float t) {
         return {
@@ -31,11 +42,11 @@ export namespace VertexProcessor {
         };
     }
 
-    List<ClipVertex> clip(const ClipVertex& v1, const ClipVertex& v2, const ClipVertex& v3) {
-        List<ClipVertex> temp1;
-        List<ClipVertex> temp2;
-        temp1.reserve(6);
-        temp2.reserve(6);
+    // 最终数据在temp2中
+    void clip(const ClipVertex& v1, const ClipVertex& v2, const ClipVertex& v3, List<ClipVertex>& temp1, List<ClipVertex>& temp2) {
+        // Log::debug("Run Clip");
+        temp1.clear();
+        temp2.clear();
         temp1.push_back(v1);
         temp1.push_back(v2);
         temp1.push_back(v3);
@@ -133,8 +144,6 @@ export namespace VertexProcessor {
                 temp2.push_back(B);
             }
         }
-
-        return temp2;
     }
 
     ScreenTriangle toScreenTriangle(const ClipVertex& clipV1, const ClipVertex& clipV2, const ClipVertex& clipV3, const Matrix4x4& viewPortMatrix, Texture* texture) {
@@ -158,8 +167,262 @@ export namespace VertexProcessor {
         return (ndc2.x - ndc1.x) * (ndc3.y - ndc1.y) - (ndc2.y - ndc1.y) * (ndc3.x - ndc1.x) >= 0.0f;
     }
 
+    inline void processAllInTriangle(const ClipVertex& v1, const ClipVertex& v2, const ClipVertex& v3,
+                                     const Float hsw, const Float hsh, const Triangle& triangle, List<ScreenTriangle>& result) {
+        __m256 vecX = _mm256_setr_ps(v1.pos.x, v2.pos.x, v3.pos.x, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+        __m256 vecY = _mm256_setr_ps(v1.pos.y, v2.pos.y, v3.pos.y, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+        __m256 vecZ = _mm256_setr_ps(v1.pos.z, v2.pos.z, v3.pos.z, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+        __m256 vecW = _mm256_setr_ps(v1.pos.w, v2.pos.w, v3.pos.w, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+
+        __m256 invW = _mm256_div_ps(_mm256_set1_ps(1.0f), vecW);
+
+        __m256 ndcX = _mm256_mul_ps(vecX, invW);
+        __m256 ndcY = _mm256_mul_ps(vecY, invW);
+        __m256 ndcZ = _mm256_mul_ps(vecZ, invW);
+
+        alignas(32) Float resNdcX[8];
+        alignas(32) Float resNdcY[8];
+        alignas(32) Float resNdcZ[8];
+        alignas(32) Float resInvW[8];
+        _mm256_store_ps(resNdcX, ndcX);
+        _mm256_store_ps(resNdcY, ndcY);
+        _mm256_store_ps(resNdcZ, ndcZ);
+        _mm256_store_ps(resInvW, invW);
+
+        // 背面剔除
+        Float backFaceCross = (resNdcX[1] - resNdcX[0]) * (resNdcY[2] - resNdcY[0])
+                            - (resNdcY[1] - resNdcY[0]) * (resNdcX[2] - resNdcX[0]);
+        if (backFaceCross >= 0.0f) return;
+
+        // 视口映射
+        __m256 vpX = _mm256_add_ps(_mm256_mul_ps(ndcX, _mm256_set1_ps(hsw)), _mm256_set1_ps(hsw));
+        __m256 vpY = _mm256_add_ps(_mm256_mul_ps(ndcY, _mm256_set1_ps(-hsh)), _mm256_set1_ps(hsh));
+
+        alignas(32) Float resVpX[8];
+        alignas(32) Float resVpY[8];
+        _mm256_store_ps(resVpX, vpX);
+        _mm256_store_ps(resVpY, vpY);
+
+        result.push_back({
+            {{static_cast<Int64>(resVpX[0]), static_cast<Int64>(resVpY[0])}, 1.0f - resNdcZ[0], resInvW[0], v1.normal, v1.uv},
+            {{static_cast<Int64>(resVpX[1]), static_cast<Int64>(resVpY[1])}, 1.0f - resNdcZ[1], resInvW[1], v2.normal, v2.uv},
+            {{static_cast<Int64>(resVpX[2]), static_cast<Int64>(resVpY[2])}, 1.0f - resNdcZ[2], resInvW[2], v3.normal, v3.uv},
+            triangle.texture
+        });
+    }
+
+
+    void processRange(const Scene3DSnapShot* snapShot, const TransformRange& range, const ClipVertex* clipSpaceVertex, const Matrix4x4& viewPortMatrix, List<ScreenTriangle>& result) {
+        List<ClipVertex> globalTemp1;
+        List<ClipVertex> globalTemp2;
+        globalTemp1.reserve(12);
+        globalTemp2.reserve(12);
+        result.reserve(range.end - range.start);
+
+        const Triangle* triangles = snapShot->renderPackages[range.pkgIndex].triangles;
+
+        for (UInt32 i = range.start; i < range.end; i++) {
+            const Triangle& triangle = triangles[i];
+            const ClipVertex& v1 = clipSpaceVertex[triangle.v1];
+            const ClipVertex& v2 = clipSpaceVertex[triangle.v2];
+            const ClipVertex& v3 = clipSpaceVertex[triangle.v3];
+
+            if (v1.pos.z <= 0 && v2.pos.z <= 0 && v3.pos.z <= 0) continue;
+            if (v1.pos.x <= -v1.pos.w && v2.pos.x <= -v2.pos.w && v3.pos.x <= -v3.pos.w) continue;
+            if (v1.pos.x >= v1.pos.w && v2.pos.x >= v2.pos.w && v3.pos.x >= v3.pos.w) continue;
+            if (v1.pos.y <= -v1.pos.w && v2.pos.y <= -v2.pos.w && v3.pos.y <= -v3.pos.w) continue;
+            if (v1.pos.y >= v1.pos.w && v2.pos.y >= v2.pos.w && v3.pos.y >= v3.pos.w) continue;
+
+            const Boolean allIn =
+                v1.pos.z > 0 && v2.pos.z > 0 && v3.pos.z > 0 &&
+                v1.pos.x > -v1.pos.w && v2.pos.x > -v2.pos.w && v3.pos.x > -v3.pos.w &&
+                v1.pos.x < v1.pos.w && v2.pos.x < v2.pos.w && v3.pos.x < v3.pos.w &&
+                v1.pos.y > -v1.pos.w && v2.pos.y > -v2.pos.w && v3.pos.y > -v3.pos.w &&
+                v1.pos.y < v1.pos.w && v2.pos.y < v2.pos.w && v3.pos.y < v3.pos.w;
+
+            if (allIn) {
+                processAllInTriangle(v1, v2, v3, viewPortMatrix[3], viewPortMatrix[7], triangle, result);
+                continue;
+            }
+
+            clip(v1, v2, v3, globalTemp1, globalTemp2);
+            const UInt32 totalVertices = globalTemp2.size();
+            if (totalVertices < 3) continue;
+
+            const ClipVertex& clipV1 = globalTemp2[0];
+            const Float invW1 = 1.0f / clipV1.pos.w;
+            const Vector4D v1ndc{clipV1.pos.x * invW1, clipV1.pos.y * invW1, clipV1.pos.z * invW1, 1.0f};
+            const Vector4D v1vp = viewPortMatrix * v1ndc;
+
+            for (UInt32 t = 1; t < totalVertices - 1; t++) {
+                const ClipVertex& clipV2 = globalTemp2[t];
+                const ClipVertex& clipV3 = globalTemp2[t + 1];
+
+                const Float invW2 = 1.0f / clipV2.pos.w;
+                const Float invW3 = 1.0f / clipV3.pos.w;
+
+                const Vector4D v2ndc{clipV2.pos.x * invW2, clipV2.pos.y * invW2, clipV2.pos.z * invW2, 1.0f};
+                const Vector4D v3ndc{clipV3.pos.x * invW3, clipV3.pos.y * invW3, clipV3.pos.z * invW3, 1.0f};
+
+                if (isBackFace(v1ndc, v2ndc, v3ndc)) continue;
+
+                const Vector4D v2vp = viewPortMatrix * v2ndc;
+                const Vector4D v3vp = viewPortMatrix * v3ndc;
+
+                result.push_back({
+                    {{static_cast<Int64>(v1vp.x), static_cast<Int64>(v1vp.y)}, 1.0f - v1ndc.z, invW1, clipV1.normal, clipV1.uv},
+                    {{static_cast<Int64>(v2vp.x), static_cast<Int64>(v2vp.y)}, 1.0f - v2ndc.z, invW2, clipV2.normal, clipV2.uv},
+                    {{static_cast<Int64>(v3vp.x), static_cast<Int64>(v3vp.y)}, 1.0f - v3ndc.z, invW3, clipV3.normal, clipV3.uv},
+                    triangle.texture
+                });
+            }
+        }
+    }
+
+    class VertexProcessorTask final : public Runnable {
+    public:
+        ClipVertex* resultArray;
+        TransformRange range;
+        const Scene3DSnapShot *sceneSnapShot;
+        Matrix4x4 mvp;
+        Matrix3x3 nMatrix;
+
+        void run() override {
+            for (UInt32 i = range.start; i < range.end; i++) {
+                const auto&[pos, normal, uv] = sceneSnapShot->renderPackages[range.pkgIndex].vertices[i];
+                resultArray[i].pos = mvp * pos;
+                resultArray[i].normal = nMatrix * normal;
+                resultArray[i].uv = uv;
+            }
+        }
+    };
+
+    class TriangleProcessorTask final : public Runnable {
+    public:
+        const Scene3DSnapShot* snapShot;
+        TransformRange range;
+        const ClipVertex* clipVertexes;
+        Matrix4x4 viewPortMatrix;
+        List<ScreenTriangle> result{};
+
+        void run() override {
+            processRange(snapShot, range, clipVertexes, viewPortMatrix, result);
+            // Log::debug("Task %d done, has %d screen triangles", range.pkgIndex, result.size());
+        }
+    };
+
+    List<ScreenTriangle> process(const Scene3DSnapShot* sceneSnapShot, ThreadPool& threadPool, const Int32 taskCount) {
+        Int32 totalTriangles = 0;
+        Int32 totalVertexes = 0;
+        for (auto& pkg : sceneSnapShot->renderPackages) {
+            totalVertexes += pkg.vertexCount;
+            totalTriangles += pkg.triangleCount;
+        }
+        auto tasks = make_unique_for_overwrite<UniquePtr<Runnable>[]>(taskCount + 10);
+        Int32 taskWritePos = 0;
+
+        Int32 pkgIndex = 0;
+        List<UniquePtr<ClipVertex[]>> clipSpaceVertexList;
+        clipSpaceVertexList.reserve(sceneSnapShot->renderPackages.size());
+        for (auto& pkg : sceneSnapShot->renderPackages) {
+            Int32 vertexTaskForThisPkg = static_cast<Float>(pkg.vertexCount) / totalVertexes * taskCount;
+            if (vertexTaskForThisPkg < 1) vertexTaskForThisPkg = 1;
+            Int32 vertexPerTask = static_cast<Int32>(static_cast<Float>(pkg.vertexCount) / vertexTaskForThisPkg);
+
+            const Matrix4x4 mvp = sceneSnapShot->projectionMatrix * sceneSnapShot->viewMatrix * pkg.modelMatrix;
+            const Matrix3x3 normalMatrix = static_cast<Matrix3x3>(pkg.modelMatrix).inverse().transpose();
+
+            UniquePtr<ClipVertex[]> clipSpaceVertex = make_unique_for_overwrite<ClipVertex[]>(pkg.vertexCount);
+
+            for (Int32 i = 0; i < pkg.vertexCount; i += vertexPerTask) {
+                Int32 vertexCount = std::min(vertexPerTask, static_cast<Int32>(pkg.vertexCount - i));
+
+                TransformRange range{};
+                range.pkgIndex = pkgIndex;
+                range.start = i;
+                range.end = i + vertexCount;
+
+                auto* task = new VertexProcessorTask;
+                task->range = range;
+                task->sceneSnapShot = sceneSnapShot;
+                task->resultArray = clipSpaceVertex.get();
+                task->mvp = mvp;
+                task->nMatrix = normalMatrix;
+
+                tasks[taskWritePos++] = UniquePtr<Runnable>(task);
+            }
+            clipSpaceVertexList.push_back(move(clipSpaceVertex));
+            pkgIndex++;
+        }
+        threadPool.submit(tasks.get(), taskWritePos);
+        std::fill_n(tasks.get(), taskWritePos, nullptr);
+        taskWritePos = 0;
+        pkgIndex = 0;
+        Matrix4x4 viewPortMatrix{};
+        viewPortMatrix[0] = 0.5f * sceneSnapShot->screenWidth;
+        viewPortMatrix[3] = 0.5f * sceneSnapShot->screenWidth;
+        viewPortMatrix[5] = -0.5f * sceneSnapShot->screenHeight;
+        viewPortMatrix[7] = 0.5f * sceneSnapShot->screenHeight;
+        viewPortMatrix[10] = -1.0f;
+        viewPortMatrix[11] = 1.0f;
+        viewPortMatrix[15] = 1.0f;
+        for (auto& pkg : sceneSnapShot->renderPackages) {
+            Int32 triangleTaskForThisPkg = static_cast<Float>(pkg.triangleCount) / totalTriangles * taskCount;
+            if (triangleTaskForThisPkg < 1) triangleTaskForThisPkg = 1;
+            Int32 trianglePerTask = static_cast<Int32>(static_cast<Float>(pkg.triangleCount) / triangleTaskForThisPkg);
+
+            for (Int32 i = 0; i < pkg.triangleCount; i += trianglePerTask) {
+                Int32 triangleCount = std::min(trianglePerTask, static_cast<Int32>(pkg.triangleCount - i));
+
+                TransformRange range{};
+                range.pkgIndex = pkgIndex;
+                range.start = i;
+                range.end = i + triangleCount;
+
+                auto* task = new TriangleProcessorTask;
+                task->snapShot = sceneSnapShot;
+                task->range = range;
+                task->clipVertexes = clipSpaceVertexList[pkgIndex].get();
+                task->viewPortMatrix = viewPortMatrix;
+
+                tasks[taskWritePos++] = UniquePtr<Runnable>(task);
+            }
+            pkgIndex++;
+        }
+        threadPool.submit(tasks.get(), taskWritePos);
+
+        Int64 totalValidTriangles = 0;
+        for (Int32 i = 0; i < taskWritePos; i++) {
+            auto* t = static_cast<TriangleProcessorTask*>(tasks[i].get());
+            totalValidTriangles += t->result.size();
+        }
+
+        List<ScreenTriangle> finalResult;
+        finalResult.resize(totalValidTriangles);
+
+        UInt64 currentOffset = 0;
+        for (Int32 i = 0; i < taskWritePos; i++) {
+            auto* t = static_cast<TriangleProcessorTask*>(tasks[i].get());
+            if (!t->result.empty()) {
+                std::copy(t->result.begin(), t->result.end(), finalResult.begin() + currentOffset);
+                currentOffset += t->result.size();
+            }
+        }
+
+        return finalResult;
+    }
+
     List<ScreenTriangle> process(const Scene3DSnapShot* sceneSnapShot) {
         List<ScreenTriangle> result;
+        List<ClipVertex> globalTemp1;
+        List<ClipVertex> globalTemp2;
+        globalTemp1.reserve(12);
+        globalTemp2.reserve(12);
+
+        Int64 totalTriangleCount = 0;
+        for (const auto& pkg : sceneSnapShot->renderPackages)
+            totalTriangleCount += pkg.triangleCount;
+        result.reserve(totalTriangleCount * 1.1);
 
         const Matrix4x4 view_project = sceneSnapShot->projectionMatrix * sceneSnapShot->viewMatrix;
         Matrix4x4 viewPortMatrix{};
@@ -180,11 +443,13 @@ export namespace VertexProcessor {
             const Triangle* triangles = pkg.triangles;
 
             UniquePtr<ClipVertex[]> clipSpaceVertex = make_unique_for_overwrite<ClipVertex[]>(pkg.vertexCount);
+            // Int64 start = millisTime();
             for (UInt32 i = 0; i < pkg.vertexCount; i++) {
                 clipSpaceVertex[i].pos = mvp * vertexes[i].pos;
                 clipSpaceVertex[i].normal = normalMatrix * vertexes[i].normal;
                 clipSpaceVertex[i].uv = vertexes[i].uv;
             }
+            // Log::debug("clip space vertex transform time: %d", millisTime() - start);
 
             for (UInt32 i = 0; i < pkg.triangleCount; i++) {
                 const Triangle& triangle = triangles[i];
@@ -192,95 +457,55 @@ export namespace VertexProcessor {
                 const ClipVertex& v2 = clipSpaceVertex[triangle.v2];
                 const ClipVertex& v3 = clipSpaceVertex[triangle.v3];
 
-                const Boolean satisfyV1z = v1.pos.z > 0;
-                const Boolean satisfyV2z = v2.pos.z > 0;
-                const Boolean satisfyV3z = v3.pos.z > 0;
-                // 全部在近平面后方
-                if (!satisfyV1z && !satisfyV2z && !satisfyV3z) continue;
-
-                // 背面剔除
-                // const float w1 = v1.pos.w;
-                // const float w2 = v2.pos.w;
-                // const float w3 = v3.pos.w;
-                // const float crossProduct =
-                //     (v2.pos.x * w1 - v1.pos.x * w2) * (v3.pos.y * w1 - v1.pos.y * w3) -
-                //     (v2.pos.y * w1 - v1.pos.y * w2) * (v3.pos.x * w1 - v1.pos.x * w3);
-                // if (crossProduct >= 0.0f) continue;
-
-                const Boolean satisfyV1xLeft = v1.pos.x > -v1.pos.w;
-                const Boolean satisfyV2xLeft = v2.pos.x > -v2.pos.w;
-                const Boolean satisfyV3xLeft = v3.pos.x > -v3.pos.w;
-                // 全部在x-外
-                if (!satisfyV1xLeft && !satisfyV2xLeft && !satisfyV3xLeft) continue;
-
-                const Boolean satisfyV1xRight = v1.pos.x < v1.pos.w;
-                const Boolean satisfyV2xRight = v2.pos.x < v2.pos.w;
-                const Boolean satisfyV3xRight = v3.pos.x < v3.pos.w;
-                // 全部在x+外
-                if (!satisfyV1xRight && !satisfyV2xRight && !satisfyV3xRight) continue;
-
-                const Boolean satisfyV1yBottom = v1.pos.y > -v1.pos.w;
-                const Boolean satisfyV2yBottom = v2.pos.y > -v2.pos.w;
-                const Boolean satisfyV3yBottom = v3.pos.y > -v3.pos.w;
-                // 全部在y-外
-                if (!satisfyV1yBottom && !satisfyV2yBottom && !satisfyV3yBottom) continue;
-
-                const Boolean satisfyV1yTop = v1.pos.y < v1.pos.w;
-                const Boolean satisfyV2yTop = v2.pos.y < v2.pos.w;
-                const Boolean satisfyV3yTop = v3.pos.y < v3.pos.w;
-                // 全部在y+外
-                if (!satisfyV1yTop && !satisfyV2yTop && !satisfyV3yTop) continue;
+                if (v1.pos.z <= 0 && v2.pos.z <= 0 && v3.pos.z <= 0) continue;
+                if (v1.pos.x <= -v1.pos.w && v2.pos.x <= -v2.pos.w && v3.pos.x <= -v3.pos.w) continue;
+                if (v1.pos.x >= v1.pos.w && v2.pos.x >= v2.pos.w && v3.pos.x >= v3.pos.w) continue;
+                if (v1.pos.y <= -v1.pos.w && v2.pos.y <= -v2.pos.w && v3.pos.y <= -v3.pos.w) continue;
+                if (v1.pos.y >= v1.pos.w && v2.pos.y >= v2.pos.w && v3.pos.y >= v3.pos.w) continue;
 
                 const Boolean allIn =
-                    satisfyV1z && satisfyV2z && satisfyV3z &&
-                    satisfyV1xLeft && satisfyV2xLeft && satisfyV3xLeft &&
-                    satisfyV1xRight && satisfyV2xRight && satisfyV3xRight &&
-                    satisfyV1yBottom && satisfyV2yBottom && satisfyV3yBottom &&
-                    satisfyV1yTop && satisfyV2yTop && satisfyV3yTop;
-                const List<ClipVertex> clippedVertices = allIn ? List{v1, v2, v3} : clip(v1, v2, v3);
-                if (clippedVertices.size() < 3) continue;
+                    v1.pos.z > 0 && v2.pos.z > 0 && v3.pos.z > 0 &&
+                    v1.pos.x > -v1.pos.w && v2.pos.x > -v2.pos.w && v3.pos.x > -v3.pos.w &&
+                    v1.pos.x < v1.pos.w && v2.pos.x < v2.pos.w && v3.pos.x < v3.pos.w &&
+                    v1.pos.y > -v1.pos.w && v2.pos.y > -v2.pos.w && v3.pos.y > -v3.pos.w &&
+                    v1.pos.y < v1.pos.w && v2.pos.y < v2.pos.w && v3.pos.y < v3.pos.w;
 
-                for (Int32 t = 1; t < clippedVertices.size() - 1; t++) {
-                    const ClipVertex& clipV1 = clippedVertices[0];
-                    const ClipVertex& clipV2 = clippedVertices[t];
-                    const ClipVertex& clipV3 = clippedVertices[t + 1];
+                if (allIn) {
+                    processAllInTriangle(v1, v2, v3, viewPortMatrix[3], viewPortMatrix[7], triangle, result);
+                    continue;
+                }
 
-                    const Vector4D v1ndc{clipV1.pos.x / clipV1.pos.w, clipV1.pos.y / clipV1.pos.w, clipV1.pos.z / clipV1.pos.w, 1.0f};
-                    const Vector4D v2ndc{clipV2.pos.x / clipV2.pos.w, clipV2.pos.y / clipV2.pos.w, clipV2.pos.z / clipV2.pos.w, 1.0f};
-                    const Vector4D v3ndc{clipV3.pos.x / clipV3.pos.w, clipV3.pos.y / clipV3.pos.w, clipV3.pos.z / clipV3.pos.w, 1.0f};
+                clip(v1, v2, v3, globalTemp1, globalTemp2);
+                const UInt32 totalVertices = globalTemp2.size();
+                if (totalVertices < 3) continue;
+
+                const ClipVertex& clipV1 = globalTemp2[0];
+                const Float invW1 = 1.0f / clipV1.pos.w;
+                const Vector4D v1ndc{clipV1.pos.x * invW1, clipV1.pos.y * invW1, clipV1.pos.z * invW1, 1.0f};
+                const Vector4D v1vp = viewPortMatrix * v1ndc;
+
+                for (UInt32 t = 1; t < totalVertices - 1; t++) {
+                    const ClipVertex& clipV2 = globalTemp2[t];
+                    const ClipVertex& clipV3 = globalTemp2[t + 1];
+
+                    const Float invW2 = 1.0f / clipV2.pos.w;
+                    const Float invW3 = 1.0f / clipV3.pos.w;
+
+                    const Vector4D v2ndc{clipV2.pos.x * invW2, clipV2.pos.y * invW2, clipV2.pos.z * invW2, 1.0f};
+                    const Vector4D v3ndc{clipV3.pos.x * invW3, clipV3.pos.y * invW3, clipV3.pos.z * invW3, 1.0f};
 
                     if (isBackFace(v1ndc, v2ndc, v3ndc)) continue;
 
-                    const Vector4D v1vp = viewPortMatrix * v1ndc;
                     const Vector4D v2vp = viewPortMatrix * v2ndc;
                     const Vector4D v3vp = viewPortMatrix * v3ndc;
 
-                    ScreenTriangle st{{{static_cast<Int64>(v1vp.x), static_cast<Int64>(v1vp.y)}, 1.0f - v1ndc.z, 1 / clipV1.pos.w,  clipV1.normal, clipV1.uv},
-                        {{static_cast<Int64>(v2vp.x), static_cast<Int64>(v2vp.y)}, 1.0f - v2ndc.z, 1 / clipV2.pos.w,  clipV2.normal, clipV2.uv},
-                        {{static_cast<Int64>(v3vp.x), static_cast<Int64>(v3vp.y)}, 1.0f - v3ndc.z, 1 / clipV3.pos.w,  clipV3.normal, clipV3.uv},
-                        triangle.texture};
-                    result.push_back(move(st));
+                    result.push_back({
+                        {{static_cast<Int64>(v1vp.x), static_cast<Int64>(v1vp.y)}, 1.0f - v1ndc.z, invW1, clipV1.normal, clipV1.uv},
+                        {{static_cast<Int64>(v2vp.x), static_cast<Int64>(v2vp.y)}, 1.0f - v2ndc.z, invW2, clipV2.normal, clipV2.uv},
+                        {{static_cast<Int64>(v3vp.x), static_cast<Int64>(v3vp.y)}, 1.0f - v3ndc.z, invW3, clipV3.normal, clipV3.uv},
+                        triangle.texture
+                    });
                 }
-
-                // // 全部在视锥体内
-                // if (
-                //     satisfyV1z && satisfyV2z && satisfyV3z &&
-                //     satisfyV1xLeft && satisfyV2xLeft && satisfyV3xLeft &&
-                //     satisfyV1xRight && satisfyV2xRight && satisfyV3xRight &&
-                //     satisfyV1yBottom && satisfyV2yBottom && satisfyV3yBottom &&
-                //     satisfyV1yTop && satisfyV2yTop && satisfyV3yTop
-                //     ) {
-                //     // clippedVertices{v1, v2, v3};
-                //     // result.push_back(toScreenTriangle(v1, v2, v3, viewPortMatrix, triangle.texture));
-                // }
-                // // 需要裁剪
-                // else {
-                //     // 后续切分三角形操作
-                //     if (clippedVertices.empty()) continue;
-                //     for (Int32 t = 1; t < clippedVertices.size() - 1; t++) {
-                //
-                //     }
-                // }
             }
         }
 

@@ -15,6 +15,7 @@ import Vertex;
 import Triangle;
 import Texture;
 import Logger;
+import Image;
 
 export struct MtlObject {
     String name;
@@ -202,11 +203,37 @@ export namespace OBJ {
 
         Map<String, UInt32> mtlIndexes;
         UInt32 mtlWritePos = 0;
+        Map<String, Image> loaded;
         for (const auto& [name, Ka, Kd, Ks, Ns, d, map_Kd, map_Ks, map_d, map_bump] : obj.mtls | std::views::values) {
-            auto texture = make_unique<Texture>(
-                Ka, Kd, Ks, Ns, d,
-                map_Kd, map_Ks, map_d, map_bump
-            );
+            auto texture = make_unique<Texture>(Ka, Kd, Ks, Ns, d);
+            if (!map_Kd.empty()) {
+                if (!loaded.contains(map_Kd)) {
+                    Image img = Image::fromFile(map_Kd);
+                    loaded[map_Kd] = img;
+                }
+                texture->map_Kd = loaded[map_Kd];
+            }
+            if (!map_Ks.empty()) {
+                if (!loaded.contains(map_Ks)) {
+                    Image img = Image::fromFile(map_Ks);
+                    loaded[map_Ks] = img;
+                }
+                texture->map_Ks = loaded[map_Ks];
+            }
+            if (!map_d.empty()) {
+                if (!loaded.contains(map_d)) {
+                    Image img = Image::fromFile(map_d);
+                    loaded[map_d] = img;
+                }
+                texture->map_d = loaded[map_d];
+            }
+            if (!map_bump.empty()) {
+                if (!loaded.contains(map_bump)) {
+                    Image img = Image::fromFile(map_bump);
+                    loaded[map_bump] = img;
+                }
+                texture->map_bump = loaded[map_bump];
+            }
             mesh.texture.push_back(move(texture));
             mtlIndexes[name] = mtlWritePos++;
         }

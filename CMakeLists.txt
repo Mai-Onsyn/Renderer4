@@ -23,7 +23,7 @@ target_link_libraries(${PROJECT_NAME} glad)
 target_link_libraries(${PROJECT_NAME} OpenGL::GL)
 target_link_libraries(${PROJECT_NAME} glfw)
 
-target_compile_options(${PROJECT_NAME} PRIVATE -mavx2)
+target_compile_options(${PROJECT_NAME} PRIVATE -mavx2 -mfma)
 
 target_include_directories(${PROJECT_NAME} PRIVATE "libs")
 

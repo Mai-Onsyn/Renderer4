@@ -60,6 +60,7 @@ public:
         snapShot->viewMatrix = camera.getViewTransformMatrix();
         snapShot->projectionMatrix = camera.getProjectionMatrix(static_cast<Float>(screenWidth) / static_cast<Float>(screenHeight));
         snapShot->cameraPos = camera.pos;
+        snapShot->cameraDir = camera.vz;
 
         snapShot->screenWidth = screenWidth;
         snapShot->screenHeight = screenHeight;

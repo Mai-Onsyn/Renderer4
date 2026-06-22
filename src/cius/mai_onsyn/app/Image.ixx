@@ -1,5 +1,6 @@
 module;
 #include <fstream>
+#include <utility>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 export module Image;
@@ -36,22 +37,21 @@ struct BMPInfoHeader {
 #pragma pack(pop)
 
 export class Image {
-    UInt8Buffer colorMap;
+    SharedUInt8Buffer colorMap;
 public:
     Int32 width, height;
     Image(const Int32 width, const Int32 height) : width(width), height(height) {
-        if (width * height > 0) colorMap = makeUInt8Buffer(width * height * 4);
+        if (width * height > 0) colorMap = makeSharedUInt8Buffer(width * height * 4);
         else colorMap = nullptr;
     }
     Image(): colorMap(nullptr), width(0), height(0) {}
+    Image(const Int32 width, const Int32 height, SharedPtr<UInt8[]> data): colorMap(move(data)), width(width), height(height) {}
 
     [[nodiscard]] UInt8* getBuffer() const {
         return colorMap.get();
     }
 
     [[nodiscard]] Color pixelAt(const Int32 x, const Int32 y) const {
-        // Log::debug("x: %.2f, y: %.2f", width, height);
-        // Log::debug("ColorMap: %b", colorMap.get() == nullptr);
         const Int32 offset = (y * width + x) * 4;
         return Color{colorMap[offset], colorMap[offset + 1], colorMap[offset + 2], colorMap[offset + 3]};
     }

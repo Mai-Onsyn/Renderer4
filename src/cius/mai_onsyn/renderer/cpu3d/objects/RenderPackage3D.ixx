@@ -32,6 +32,7 @@ export struct Scene3DSnapShot {
     Matrix4x4 viewMatrix;
     Matrix4x4 projectionMatrix;
     Vector3D cameraPos;
+    Vector3D cameraDir;
 
     Int32 screenWidth, screenHeight;
     Float near;

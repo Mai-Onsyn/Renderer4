@@ -34,7 +34,7 @@ class CPU3DRenderer final : public Renderer<Scene3DSnapShot> {
     Int32 tileSize = 0;
 public:
     using SupportedScene = SceneT;
-    CPU3DRenderer(const Int32 width, const Int32 height, const Int32 threadCount = 6, const Int32 tileSize = 64) : Renderer(width, height), executor(threadCount), tileSize(tileSize) {
+    CPU3DRenderer(const Int32 width, const Int32 height, const Int32 threadCount = 12, const Int32 tileSize = 64) : Renderer(width, height), executor(threadCount), tileSize(tileSize) {
         onResize(width, height);
         executor.start();
     }
@@ -64,12 +64,11 @@ public:
         frameBuffer->clearScreen({135, 206, 250, 255});
 
         Int64 vertexTransformStart = millisTime();
-        const List<ScreenTriangle>& screenTriangles = VertexProcessor::process(sceneSnapShot);
+        const List<ScreenTriangle>& screenTriangles = VertexProcessor::process(sceneSnapShot, executor, 1024);
         Int64 binningStart = millisTime();
         TriangleProcessor::binning(tiles.get(), screenTriangles, tileCount, tileSize, width, height);
 
-        Log::debug("Vertex transform cost %d\nbinning cost %d", binningStart - vertexTransformStart, millisTime() - binningStart);
-
+        Int64 rasterizationStart = millisTime();
         const UInt64 timeFactor = millisTime();
         for (Int32 i = 0; i < tileCount; i++) {
             auto* task = new TileTask{tiles[i]};
@@ -79,9 +78,12 @@ public:
             tasks[i] = UniquePtr<Runnable>(task);
         }
         executor.submit(tasks.get(), tileCount);
+        Log::debug("\nVertex transform cost %d\nbinning cost %d\nrasterization cost %d", binningStart - vertexTransformStart, rasterizationStart - binningStart, millisTime() - rasterizationStart);
 
         drawText(format("FPS = %.2f", getFPS()), 8, 8, frameBuffer->getBuffer());
         drawText(format("Resolution = %d*%d", width, height), 8, 27 + 8, frameBuffer->getBuffer());
+        drawText(Stringf::format("Pos = %s", sceneSnapShot->cameraPos.toString()), 8, 54 + 8, frameBuffer->getBuffer());
+        drawText(Stringf::format("View = %s", sceneSnapShot->cameraDir.toString()), 8, 81 + 8, frameBuffer->getBuffer());
         tripleBuffer.commit();
     }
 

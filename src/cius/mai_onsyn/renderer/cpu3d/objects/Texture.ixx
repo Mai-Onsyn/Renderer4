@@ -7,7 +7,6 @@ import Color;
 import Vectors;
 
 export struct Texture {
-private:
     Color Ka;           // 环境光颜色
     Color Kd;           // 漫反射颜色
     Color Ks;           // 镜面反射颜色
@@ -17,20 +16,30 @@ private:
     Image map_Ks;       // 镜面反射纹理
     Image map_d;        // 透明度纹理
     Image map_bump;     // 法线纹理
-public:
+
+    Texture() = default;
     explicit Texture(Image img) : map_Kd(move(img)) {}
     explicit Texture(const Int32 width, const Int32 height) : map_Kd(width, height) {}
     explicit Texture(const String& path) : map_Kd(Image::fromFile(path)) {}
-    Texture(
-        const Color& ka = Color::White,
-        const Color& kd = Color::White,
-        const Color& ks = Color::White,
-        const Float ns = 0,
-        const Float d = 1,
-        const String& map_kd = "",
-        const String& map_ks = "",
-        const String& map_d = "",
-        const String& map_bump = ""
+
+    explicit Texture(
+        const Color& ka,
+        const Color& kd,
+        const Color& ks,
+        const Float ns,
+        const Float d
+        ) : Ka(ka), Kd(kd), Ks(ks), Ns(ns), d(d) {}
+
+    explicit Texture(
+        const Color& ka,
+        const Color& kd,
+        const Color& ks,
+        const Float ns,
+        const Float d,
+        const String& map_kd,
+        const String& map_ks,
+        const String& map_d,
+        const String& map_bump
         )
         : Ka(ka),
           Kd(kd),
@@ -41,6 +50,27 @@ public:
           map_Ks(Image::fromFile(map_ks)),
           map_d(Image::fromFile(map_d)),
           map_bump(Image::fromFile(map_bump)) {}
+
+    explicit Texture(
+        const Color& ka,
+        const Color& kd,
+        const Color& ks,
+        const Float ns,
+        const Float d,
+        const Image& map_kd,
+        const Image& map_ks,
+        const Image& map_d,
+        const Image& map_bump
+        )
+        : Ka(ka),
+          Kd(kd),
+          Ks(ks),
+          Ns(ns),
+          d(d),
+          map_Kd(map_kd),
+          map_Ks(map_ks),
+          map_d(map_d),
+          map_bump(map_bump) {}
 
     [[nodiscard]] Int32 getWidth() const {
         return map_Kd.width;
@@ -58,7 +88,39 @@ public:
         return map_Kd.pixelAt(static_cast<Int32>(u * map_Kd.width) % map_Kd.width, static_cast<Int32>(v * map_Kd.height) % map_Kd.height);
     }
 
-    UInt8* getData() const {
+    UInt8* getKdData() const {
         return map_Kd.getBuffer();
+    }
+
+    const Image* getKd() const {
+        return &map_Kd;
+    }
+
+    const Image* getKs() const {
+        return &map_Ks;
+    }
+
+    const Image* getD() const {
+        return &map_d;
+    }
+
+    const Image* getBump() const {
+        return &map_bump;
+    }
+
+    void setMapKd(const Image* img) {
+        this->map_Kd = *img;
+    }
+
+    void setMapKs(const Image* img) {
+        this->map_Ks = *img;
+    }
+
+    void setMapD(const Image* img) {
+        this->map_d = *img;
+    }
+
+    void setMapBump(const Image* img) {
+        this->map_bump = *img;
     }
 };
