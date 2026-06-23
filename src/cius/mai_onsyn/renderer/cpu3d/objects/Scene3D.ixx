@@ -115,13 +115,13 @@ public:
 
     Float r = 0;
     void rotateTest() {
-        auto entity = getEntity("Test Entity");
+        auto entity = getEntity("Misono Mika");
         if (!entity) return;
         entity->transform.modelMatrix[0] = cos(r);
         entity->transform.modelMatrix[8] = sin(r);
         entity->transform.modelMatrix[2] = -sin(r);
         entity->transform.modelMatrix[10] = cos(r);
-        r += 0.03f;
+        r += 0.003f;
     }
 
     void updateCamera(FramebufferWindow* window, InputManager* inputManager, const Int32 tps) {

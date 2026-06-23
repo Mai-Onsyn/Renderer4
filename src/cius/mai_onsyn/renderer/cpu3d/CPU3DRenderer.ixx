@@ -2,6 +2,7 @@ module;
 #include <cmath>
 #include <memory>
 #include <thread>
+#include <vector>
 export module CPU3DRenderer;
 import Renderer;
 import Types;
@@ -32,9 +33,10 @@ class CPU3DRenderer final : public Renderer<Scene3DSnapShot> {
     UniquePtr<UniquePtr<Runnable>[]> tasks;
     Int32 tileCount = 0;
     Int32 tileSize = 0;
+    Int32 threadCount;
 public:
     using SupportedScene = SceneT;
-    CPU3DRenderer(const Int32 width, const Int32 height, const Int32 threadCount = 12, const Int32 tileSize = 64) : Renderer(width, height), executor(threadCount), tileSize(tileSize) {
+    CPU3DRenderer(const Int32 width, const Int32 height, const Int32 threadCount = 12, const Int32 tileSize = 64) : Renderer(width, height), executor(threadCount), tileSize(tileSize), threadCount(threadCount) {
         onResize(width, height);
         executor.start();
     }
@@ -64,7 +66,7 @@ public:
         frameBuffer->clearScreen({135, 206, 250, 255});
 
         Int64 vertexTransformStart = millisTime();
-        const List<ScreenTriangle>& screenTriangles = VertexProcessor::process(sceneSnapShot, executor, 1024);
+        const List<List<ScreenTriangle>>& screenTriangles = VertexProcessor::process(sceneSnapShot, executor, 20 * threadCount);
         Int64 binningStart = millisTime();
         TriangleProcessor::binning(tiles.get(), screenTriangles, tileCount, tileSize, width, height);
 
@@ -72,19 +74,21 @@ public:
         const UInt64 timeFactor = millisTime();
         for (Int32 i = 0; i < tileCount; i++) {
             auto* task = new TileTask{tiles[i]};
-            task->setTriangleList(screenTriangles.data());
+            // task->setTriangleList(screenTriangles.data());
             task->setDrawBuffer(frameBuffer, depthBuffer.get());
             task->setTimeFactor(timeFactor);
             tasks[i] = UniquePtr<Runnable>(task);
         }
         executor.submit(tasks.get(), tileCount);
-        Log::debug("\nVertex transform cost %d\nbinning cost %d\nrasterization cost %d", binningStart - vertexTransformStart, rasterizationStart - binningStart, millisTime() - rasterizationStart);
 
+        Int64 textDrawStart = millisTime();
         drawText(format("FPS = %.2f", getFPS()), 8, 8, frameBuffer->getBuffer());
         drawText(format("Resolution = %d*%d", width, height), 8, 27 + 8, frameBuffer->getBuffer());
         drawText(Stringf::format("Pos = %s", sceneSnapShot->cameraPos.toString()), 8, 54 + 8, frameBuffer->getBuffer());
         drawText(Stringf::format("View = %s", sceneSnapShot->cameraDir.toString()), 8, 81 + 8, frameBuffer->getBuffer());
         tripleBuffer.commit();
+
+        // Log::debug("\nVertex transform cost %d\nbinning cost %d\nrasterization cost %d\ndraw text cost %d", binningStart - vertexTransformStart, rasterizationStart - binningStart, textDrawStart - rasterizationStart, millisTime() - textDrawStart);
     }
 
     void drawText(const String& text, const Int32 ox, const Int32 oy, UInt8* screen) {

@@ -4,6 +4,7 @@ import Types;
 import ScreenVertex;
 import Color;
 import Vectors;
+import Light;
 
 export struct Fragment {
     Int64 x, y;
@@ -13,6 +14,7 @@ export struct Fragment {
 };
 
 export namespace Shader {
+
     Color fragmentShader(const Fragment& fragment) {
         return fragment.uvColor;
     }

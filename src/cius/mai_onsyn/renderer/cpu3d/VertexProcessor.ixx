@@ -1,5 +1,6 @@
 module;
 #include <vector>
+#include <memory>
 #include <string>
 #include <immintrin.h>
 export module VertexProcessor;
@@ -21,6 +22,7 @@ struct ClipVertex {
     Vector4D pos;
     Vector3D normal;
     Vector2D uv;
+    Vector3D worldPos;
 
     String toString() const {
         return "ClipVertex(pos=" + pos.toString() + ", normal=" + normal.toString() + ")";
@@ -38,7 +40,8 @@ export namespace VertexProcessor {
         return {
             v1.pos * (1 - t) + v2.pos * t,
             v1.normal * (1 - t) + v2.normal * t,
-            v1.uv * (1 - t) + v2.uv * t
+            v1.uv * (1 - t) + v2.uv * t,
+            v1.worldPos * (1 - t) + v2.worldPos * t
         };
     }
 
@@ -146,22 +149,22 @@ export namespace VertexProcessor {
         }
     }
 
-    ScreenTriangle toScreenTriangle(const ClipVertex& clipV1, const ClipVertex& clipV2, const ClipVertex& clipV3, const Matrix4x4& viewPortMatrix, Texture* texture) {
-        const Vector4D v1ndc{clipV1.pos.x / clipV1.pos.w, clipV1.pos.y / clipV1.pos.w, clipV1.pos.z / clipV1.pos.w, 1.0f};
-        const Vector4D v2ndc{clipV2.pos.x / clipV2.pos.w, clipV2.pos.y / clipV2.pos.w, clipV2.pos.z / clipV2.pos.w, 1.0f};
-        const Vector4D v3ndc{clipV3.pos.x / clipV3.pos.w, clipV3.pos.y / clipV3.pos.w, clipV3.pos.z / clipV3.pos.w, 1.0f};
-
-        const Vector4D v1vp = viewPortMatrix * v1ndc;
-        const Vector4D v2vp = viewPortMatrix * v2ndc;
-        const Vector4D v3vp = viewPortMatrix * v3ndc;
-
-        return {
-            {{static_cast<Int64>(v1vp.x), static_cast<Int64>(v1vp.y)}, 1.0f - v1ndc.z, 1 / clipV1.pos.w,  clipV1.normal, clipV1.uv},
-            {{static_cast<Int64>(v2vp.x), static_cast<Int64>(v2vp.y)}, 1.0f - v2ndc.z, 1 / clipV2.pos.w,  clipV2.normal, clipV2.uv},
-            {{static_cast<Int64>(v3vp.x), static_cast<Int64>(v3vp.y)}, 1.0f - v3ndc.z, 1 / clipV3.pos.w,  clipV3.normal, clipV3.uv},
-            texture
-        };
-    }
+    // ScreenTriangle toScreenTriangle(const ClipVertex& clipV1, const ClipVertex& clipV2, const ClipVertex& clipV3, const Matrix4x4& viewPortMatrix, Texture* texture) {
+    //     const Vector4D v1ndc{clipV1.pos.x / clipV1.pos.w, clipV1.pos.y / clipV1.pos.w, clipV1.pos.z / clipV1.pos.w, 1.0f};
+    //     const Vector4D v2ndc{clipV2.pos.x / clipV2.pos.w, clipV2.pos.y / clipV2.pos.w, clipV2.pos.z / clipV2.pos.w, 1.0f};
+    //     const Vector4D v3ndc{clipV3.pos.x / clipV3.pos.w, clipV3.pos.y / clipV3.pos.w, clipV3.pos.z / clipV3.pos.w, 1.0f};
+    //
+    //     const Vector4D v1vp = viewPortMatrix * v1ndc;
+    //     const Vector4D v2vp = viewPortMatrix * v2ndc;
+    //     const Vector4D v3vp = viewPortMatrix * v3ndc;
+    //
+    //     return {
+    //         {{static_cast<Int64>(v1vp.x), static_cast<Int64>(v1vp.y)}, 1.0f - v1ndc.z, 1 / clipV1.pos.w,  clipV1.normal, clipV1.uv},
+    //         {{static_cast<Int64>(v2vp.x), static_cast<Int64>(v2vp.y)}, 1.0f - v2ndc.z, 1 / clipV2.pos.w,  clipV2.normal, clipV2.uv},
+    //         {{static_cast<Int64>(v3vp.x), static_cast<Int64>(v3vp.y)}, 1.0f - v3ndc.z, 1 / clipV3.pos.w,  clipV3.normal, clipV3.uv},
+    //         texture
+    //     };
+    // }
 
     Boolean isBackFace(const Vector4D& ndc1, const Vector4D& ndc2, const Vector4D& ndc3) {
         return (ndc2.x - ndc1.x) * (ndc3.y - ndc1.y) - (ndc2.y - ndc1.y) * (ndc3.x - ndc1.x) >= 0.0f;
@@ -284,13 +287,16 @@ export namespace VertexProcessor {
         ClipVertex* resultArray;
         TransformRange range;
         const Scene3DSnapShot *sceneSnapShot;
-        Matrix4x4 mvp;
+        Matrix4x4 m;
+        Matrix4x4 vp;
         Matrix3x3 nMatrix;
 
         void run() override {
             for (UInt32 i = range.start; i < range.end; i++) {
                 const auto&[pos, normal, uv] = sceneSnapShot->renderPackages[range.pkgIndex].vertices[i];
-                resultArray[i].pos = mvp * pos;
+                Vector4D wordPos = m * pos;
+                resultArray[i].worldPos = static_cast<Vector3D>(wordPos);
+                resultArray[i].pos = vp * wordPos;
                 resultArray[i].normal = nMatrix * normal;
                 resultArray[i].uv = uv;
             }
@@ -306,19 +312,21 @@ export namespace VertexProcessor {
         List<ScreenTriangle> result{};
 
         void run() override {
+            result.reserve((range.end - range.start) * 0.8);
             processRange(snapShot, range, clipVertexes, viewPortMatrix, result);
             // Log::debug("Task %d done, has %d screen triangles", range.pkgIndex, result.size());
         }
     };
 
-    List<ScreenTriangle> process(const Scene3DSnapShot* sceneSnapShot, ThreadPool& threadPool, const Int32 taskCount) {
+    List<List<ScreenTriangle>> process(const Scene3DSnapShot* sceneSnapShot, ThreadPool& threadPool, const Int32 taskCount) {
+        Int64 step1Start = millisTime();
         Int32 totalTriangles = 0;
         Int32 totalVertexes = 0;
         for (auto& pkg : sceneSnapShot->renderPackages) {
             totalVertexes += pkg.vertexCount;
             totalTriangles += pkg.triangleCount;
         }
-        auto tasks = make_unique_for_overwrite<UniquePtr<Runnable>[]>(taskCount + 10);
+        auto tasks = make_unique_for_overwrite<UniquePtr<Runnable>[]>(taskCount + 100);
         Int32 taskWritePos = 0;
 
         Int32 pkgIndex = 0;
@@ -328,8 +336,9 @@ export namespace VertexProcessor {
             Int32 vertexTaskForThisPkg = static_cast<Float>(pkg.vertexCount) / totalVertexes * taskCount;
             if (vertexTaskForThisPkg < 1) vertexTaskForThisPkg = 1;
             Int32 vertexPerTask = static_cast<Int32>(static_cast<Float>(pkg.vertexCount) / vertexTaskForThisPkg);
+            if (vertexPerTask < 1) vertexPerTask = 1;
 
-            const Matrix4x4 mvp = sceneSnapShot->projectionMatrix * sceneSnapShot->viewMatrix * pkg.modelMatrix;
+            const Matrix4x4 vp = sceneSnapShot->projectionMatrix * sceneSnapShot->viewMatrix;
             const Matrix3x3 normalMatrix = static_cast<Matrix3x3>(pkg.modelMatrix).inverse().transpose();
 
             UniquePtr<ClipVertex[]> clipSpaceVertex = make_unique_for_overwrite<ClipVertex[]>(pkg.vertexCount);
@@ -346,7 +355,8 @@ export namespace VertexProcessor {
                 task->range = range;
                 task->sceneSnapShot = sceneSnapShot;
                 task->resultArray = clipSpaceVertex.get();
-                task->mvp = mvp;
+                task->m = pkg.modelMatrix;
+                task->vp = vp;
                 task->nMatrix = normalMatrix;
 
                 tasks[taskWritePos++] = UniquePtr<Runnable>(task);
@@ -354,7 +364,9 @@ export namespace VertexProcessor {
             clipSpaceVertexList.push_back(move(clipSpaceVertex));
             pkgIndex++;
         }
+        Int64 step1end = millisTime();
         threadPool.submit(tasks.get(), taskWritePos);
+        Int64 step2start = millisTime();
         std::fill_n(tasks.get(), taskWritePos, nullptr);
         taskWritePos = 0;
         pkgIndex = 0;
@@ -370,6 +382,7 @@ export namespace VertexProcessor {
             Int32 triangleTaskForThisPkg = static_cast<Float>(pkg.triangleCount) / totalTriangles * taskCount;
             if (triangleTaskForThisPkg < 1) triangleTaskForThisPkg = 1;
             Int32 trianglePerTask = static_cast<Int32>(static_cast<Float>(pkg.triangleCount) / triangleTaskForThisPkg);
+            if (trianglePerTask < 1) trianglePerTask = 1;
 
             for (Int32 i = 0; i < pkg.triangleCount; i += trianglePerTask) {
                 Int32 triangleCount = std::min(trianglePerTask, static_cast<Int32>(pkg.triangleCount - i));
@@ -389,25 +402,38 @@ export namespace VertexProcessor {
             }
             pkgIndex++;
         }
+        Int64 step2end = millisTime();
         threadPool.submit(tasks.get(), taskWritePos);
+        Int64 mergeStart = millisTime();
 
-        Int64 totalValidTriangles = 0;
+        // Int64 totalValidTriangles = 0;
+        // for (Int32 i = 0; i < taskWritePos; i++) {
+        //     auto* t = static_cast<TriangleProcessorTask*>(tasks[i].get());
+        //     totalValidTriangles += t->result.size();
+        // }
+        //
+        // List<ScreenTriangle> finalResult;
+        // // finalResult.clear();
+        // finalResult.resize(totalValidTriangles);
+        //
+        // UInt64 currentOffset = 0;
+        // for (Int32 i = 0; i < taskWritePos; i++) {
+        //     auto* t = static_cast<TriangleProcessorTask*>(tasks[i].get());
+        //     if (!t->result.empty()) {
+        //         std::copy(t->result.begin(), t->result.end(), finalResult.begin() + currentOffset);
+        //         currentOffset += t->result.size();
+        //     }
+        // }
+
+
+        List<List<ScreenTriangle>> finalResult;
+        finalResult.reserve(taskWritePos);
         for (Int32 i = 0; i < taskWritePos; i++) {
             auto* t = static_cast<TriangleProcessorTask*>(tasks[i].get());
-            totalValidTriangles += t->result.size();
+            finalResult.push_back(move(t->result));
         }
 
-        List<ScreenTriangle> finalResult;
-        finalResult.resize(totalValidTriangles);
-
-        UInt64 currentOffset = 0;
-        for (Int32 i = 0; i < taskWritePos; i++) {
-            auto* t = static_cast<TriangleProcessorTask*>(tasks[i].get());
-            if (!t->result.empty()) {
-                std::copy(t->result.begin(), t->result.end(), finalResult.begin() + currentOffset);
-                currentOffset += t->result.size();
-            }
-        }
+        // Log::debug("\nStep 1 prepare %d\nStep 1 submit %d\nStep 2 prepare %d\nStep 2 submit %d\nMerge %d", step1end - step1Start, step2start - step1end, step2end - step2start, mergeStart - step2end, millisTime() - mergeStart);
 
         return finalResult;
     }

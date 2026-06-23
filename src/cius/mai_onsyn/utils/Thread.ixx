@@ -26,6 +26,10 @@ public:
         sleep_for(std::chrono::milliseconds(ms));
     }
 
+    static void sleepMicro(const UInt64 us) {
+        sleep_for(std::chrono::microseconds(us));
+    }
+
     static std::thread::id getID() {
         return std::this_thread::get_id();
     }

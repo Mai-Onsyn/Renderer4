@@ -33,6 +33,7 @@ public:
     Int32 x, y, width, height, size;
     // LocalBuffer localBuffer;
     List<UInt32> triangleIndices{};
+    List<const ScreenTriangle*> triangles{};
 
     Tile(const Int32 x, const Int32 y, const Int32 width, const Int32 height):
         x(x), y(y), width(width), height(height), size(width * height) {}
@@ -105,10 +106,10 @@ export class TileTask final : public Runnable {
         const Boolean unhorizontal_AB = v1.pos.y != v2.pos.y;
         const Boolean unhorizontal_BC = v2.pos.y != v3.pos.y;
 
-        UInt32* texturePixels;
-        Int32 textureW;
-        Int32 textureH;
-        if (triangle.texture) {
+        UInt32* texturePixels = nullptr;
+        Int32 textureW = 0;
+        Int32 textureH = 0;
+        if (triangle.texture && triangle.texture->getKdData()) {
             texturePixels = reinterpret_cast<UInt32*>(triangle.texture->getKdData());
             textureW = triangle.texture->getWidth();
             textureH = triangle.texture->getHeight();
@@ -153,24 +154,24 @@ export class TileTask final : public Runnable {
                 const Float w3 = numerator3 * invSub;
 
                 const Float depth = v1.depth * w1 + v2.depth * w2 + v3.depth * w3;
-                const Float u = v1.uv.x * w1 + v2.uv.x * w2 + v3.uv.x * w3;
-                const Float v = v1.uv.y * w1 + v2.uv.y * w2 + v3.uv.y * w3;
-                const UInt32 pixelIndex = x << 2;
 
                 if (depth >= depthRow[x]) {
                     Fragment fragment;
                     if (texturePixels) {
+                        const Float u = v1.uv.x * w1 + v2.uv.x * w2 + v3.uv.x * w3;
+                        const Float v = v1.uv.y * w1 + v2.uv.y * w2 + v3.uv.y * w3;
                         Int32 tx = std::min(static_cast<Int32>(u * textureW), textureW - 1);
                         Int32 ty = std::min(static_cast<Int32>(v * textureH), textureH - 1);
                         Int32 offset = std::clamp(ty * textureW + tx, 0, textureW * textureH - 1);
                         fragment.uvColor = std::bit_cast<Color>(texturePixels[offset]);
-                        // fragment.uvColor = triangle.texture->uvAt(u, v);
                     }
                     else fragment.uvColor = {static_cast<UInt8>(isBorder ? 255 : 0), 64, 96, 255};
                     // fragment.uvColor = {255, 255, 255, 255};
                     fragment.depth = depth;
+                    fragment.normal = v1.normal * w1 + v2.normal * w2 + v3.normal * w3;
                     const auto [r, g, b, a] = Shader::fragmentShader(fragment);
 
+                    const UInt32 pixelIndex = x << 2;
                     depthRow[x] = depth;
                     screenRow[pixelIndex] = r;
                     screenRow[pixelIndex + 1] = g;
@@ -204,9 +205,9 @@ public:
     void run() override {
         clearScreenArea({135, 206, 250, 255});
 
-        if (const UInt32 size = tile->triangleIndices.size(); size > 0) {
+        if (const UInt32 size = tile->triangles.size(); size > 0) {
             for (UInt32 i = 0; i < size; i++) {
-                drawTriangle(triangleList[tile->triangleIndices[i]]);
+                drawTriangle(*tile->triangles[i]);
             }
         }
     }

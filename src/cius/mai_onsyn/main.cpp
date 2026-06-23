@@ -24,9 +24,6 @@ void makeTestScene(Application<CPU3DRenderer<Scene3D>>* app) {
         Transform triangle{};
         Mesh trianglePiece;
         UniquePtr<Texture> texture(new Texture("./assets/textures/uv_map_test.png"));
-        // trianglePiece.vertices.emplace_back(Vertex{{-1.732, -1, 0}, {0, 0, -1}, {0, 0.866}});
-        // trianglePiece.vertices.emplace_back(Vertex{{1.732, -1, 0}, {0, 0, -1}, {1, 0.866}});
-        // trianglePiece.vertices.emplace_back(Vertex{{0, 2, 0}, {0, 0, -1}, {0.5, 0}});
         trianglePiece.vertices.emplace_back(Vertex{{-1, 1, 0}, {0, 0, -1}, {0, 0}});
         trianglePiece.vertices.emplace_back(Vertex{{-1, -1, 0}, {0, 0, -1}, {0, 1}});
         trianglePiece.vertices.emplace_back(Vertex{{1, -1, 0}, {0, 0, -1}, {1, 1}});
@@ -42,6 +39,7 @@ void makeTestScene(Application<CPU3DRenderer<Scene3D>>* app) {
     const auto task2 = makeSceneOperation<Scene3D>([](Scene3D* scene) {
         Transform triangle{};
         Mesh mesh = OBJ::toMesh(OBJ::load("./assets/meshes/mika/mika test.obj"));
+        // Mesh mesh = OBJ::toMesh(OBJ::load("./assets/meshes/mc_skybox/skybox.obj"));
 
         Entity testEntity{"Misono Mika", move(mesh), move(triangle)};
         scene->addEntity(move(testEntity));

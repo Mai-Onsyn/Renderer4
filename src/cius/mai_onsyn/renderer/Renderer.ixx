@@ -12,13 +12,15 @@ import FontDrawer;
 import Image;
 import Color;
 import SceneSnapShotBuffer;
+import FrequencyCounter;
 
-constexpr Float TARGET_FPS = 100;
+// constexpr Float TARGET_FPS = 100;
 
 export template<typename SnapshotT>
 class Renderer {
     Thread* thread = nullptr;
     Float fps = 0;
+    ThrottledFrequencyCounter<0> fpsCounter{1024, 2, 1};
 
     Semaphore sem_main_to_render{0}; // 主线程通知渲染线程
     Semaphore sem_render_to_main{0}; // 渲染线程通知主线程
@@ -60,9 +62,9 @@ public:
 
     void start() {
         thread = new BasicThread([this](const StopToken& st) {
-            UInt64 fpsUpdateTimestamp = millisTime();
-            UInt64 lastFrameTimestamp = millisTime();
-            UInt32 renderedFrameCount = 0;
+            // UInt64 fpsUpdateTimestamp = millisTime();
+            // UInt64 lastFrameTimestamp = millisTime();
+            // UInt32 renderedFrameCount = 0;
             while (!st.stop_requested()) {
 
                 if (resize_requested.load(std::memory_order_acquire)) {
@@ -80,18 +82,19 @@ public:
                 }
 
                 renderFrame();
-                renderedFrameCount++;
-                const UInt64 currentTime = millisTime();
-                if (currentTime - fpsUpdateTimestamp >= 1000) {
-                    fps = static_cast<Float>(renderedFrameCount) / static_cast<Float>(currentTime - fpsUpdateTimestamp) * 1000;
-                    fpsUpdateTimestamp = currentTime;
-                    renderedFrameCount = 0;
-                }
-                if constexpr (TARGET_FPS != 0) {
-                    const UInt64 sleepTime = 1000.0f / TARGET_FPS - (currentTime - lastFrameTimestamp);
-                    Thread::sleep(sleepTime);
-                    lastFrameTimestamp = currentTime;
-                }
+                fpsCounter.tick();
+                // renderedFrameCount++;
+                // const UInt64 currentTime = millisTime();
+                // if (currentTime - fpsUpdateTimestamp >= 1000) {
+                //     fps = static_cast<Float>(renderedFrameCount) / static_cast<Float>(currentTime - fpsUpdateTimestamp) * 1000;
+                //     fpsUpdateTimestamp = currentTime;
+                //     renderedFrameCount = 0;
+                // }
+                // if constexpr (TARGET_FPS != 0) {
+                //     const UInt64 sleepTime = 1000.0f / TARGET_FPS - (currentTime - lastFrameTimestamp);
+                //     Thread::sleep(sleepTime);
+                //     lastFrameTimestamp = currentTime;
+                // }
             }
         });
         thread->start();
@@ -104,7 +107,8 @@ public:
     }
 
     [[nodiscard]] Float getFPS() const {
-        return fps;
+        // return fps;
+        return fpsCounter.getAverageFrequency();
     }
 
     void stop() const {

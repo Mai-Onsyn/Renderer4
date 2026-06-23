@@ -67,3 +67,24 @@ export String trim(const String& str) {
     const UInt64 end = str.find_last_not_of(" \t\n\r");
     return str.substr(start, end - start + 1);
 }
+
+export void collapseSpaces(String& str) {
+    if (str.empty()) return;
+
+    UInt64 writeIndex = 0;
+    Boolean inSpace = false;
+
+    for (UInt64 i = 0; i < str.length(); ++i) {
+        if (str[i] == ' ') {
+            if (!inSpace) {
+                str[writeIndex++] = ' ';
+                inSpace = true;
+            }
+        } else {
+            str[writeIndex++] = str[i];
+            inSpace = false;
+        }
+    }
+
+    str.resize(writeIndex);
+}

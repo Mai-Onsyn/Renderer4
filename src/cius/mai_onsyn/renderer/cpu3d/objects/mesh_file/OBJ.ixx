@@ -95,8 +95,9 @@ export namespace OBJ {
 
         String currentMtlName;
         while (std::getline(fis, line)) {
-            const String trimmed = trim(line);
+            String trimmed = trim(line);
             if (trimmed.empty()) continue;
+            // collapseSpaces(trimmed);
 
             List<String> tokens = split(trimmed, " ");
             if (tokens.empty()) continue;
@@ -150,8 +151,9 @@ export namespace OBJ {
         FaceMtlRange mtlRange;
         Boolean firstUseMtl = true;
         while (std::getline(fis, line)) {
-            const String trimmed = trim(line);
+            String trimmed = trim(line);
             if (trimmed.empty()) continue;
+            collapseSpaces(trimmed);
 
             List<String> tokens = split(trimmed, " ");
             if (tokens.empty()) continue;

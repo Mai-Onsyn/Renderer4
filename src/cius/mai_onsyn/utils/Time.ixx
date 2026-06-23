@@ -14,6 +14,12 @@ export Int64 millisTime() {
     return millis.count();
 }
 
+export Int64 microTime() {
+    const auto now = steady_clock::now();
+    const auto nanos = duration_cast<microseconds>(now.time_since_epoch());
+    return nanos.count();
+}
+
 export Int64 nanoTime() {
     const auto now = steady_clock::now();
     const auto nanos = duration_cast<nanoseconds>(now.time_since_epoch());
