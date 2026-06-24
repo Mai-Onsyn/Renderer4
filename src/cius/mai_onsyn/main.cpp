@@ -32,7 +32,7 @@ void makeTestScene(Application<CPU3DRenderer<Scene3D>>* app) {
         Entity testEntity{"Test Entity", move(trianglePiece), move(triangle)};
         scene->addEntity(move(testEntity));
 
-        Light light{"World Light", {0, 100, 0}, {255, 255, 255, 255}};
+        Light light{"World Light", {20, 60, -30}, {255, 255, 255, 255}};
         scene->addLight(move(light));
     });
     app->addSceneUpdate(task);

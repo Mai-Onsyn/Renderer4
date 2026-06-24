@@ -1,4 +1,5 @@
 module;
+#include <algorithm>
 #include <string>
 export module Color;
 import Types;
@@ -28,6 +29,16 @@ export struct Color {
         };
     }
 
+    Color operator*(const Float f) const noexcept {
+        return {
+            static_cast<UInt8>(r * f),
+            static_cast<UInt8>(g * f),
+            static_cast<UInt8>(b * f),
+            a
+        };
+    }
+
+
     String toString() const {
         return format("Color{%d, %d, %d, %d}", r, g, b, a);
     }
@@ -56,3 +67,39 @@ export constexpr Color Color::White{255, 255, 255};
 export constexpr Color Color::Black{0, 0, 0};
 
 export constexpr Color Color::SkyBlue{135, 206, 250};
+
+
+export struct FColor {
+    Float r, g, b, a = 1.0f;
+
+    FColor() = default;
+
+    FColor(const Float r, const Float g, const Float b, const Float a = 1.0f): r(r), g(g), b(b), a(a) {}
+
+    explicit operator Color() const {
+        return Color{static_cast<UInt8>(r * 255), static_cast<UInt8>(g * 255), static_cast<UInt8>(b * 255), static_cast<UInt8>(a * 255)};
+    }
+
+    FColor(const Color& color): r(color.r / 255.0f), g(color.g / 255.0f), b(color.b / 255.0f), a(color.a / 255.0f) {}
+
+
+    FColor operator*(const FColor& other) const {
+        return {r * other.r, g * other.g, b * other.b};
+    }
+
+    FColor operator*(const Float& other) const {
+        return {r * other, g * other, b * other};
+    }
+
+    FColor operator+(const FColor& other) const {
+        return {r + other.r, g + other.g, b + other.b};
+    }
+
+    FColor operator+=(const FColor& other) {
+        return *this = *this + other;
+    }
+
+    FColor clamp() const {
+        return {std::clamp(r, 0.0f, 1.0f), std::clamp(g, 0.0f, 1.0f), std::clamp(b, 0.0f, 1.0f), std::clamp(a, 0.0f, 1.0f)};
+    }
+};

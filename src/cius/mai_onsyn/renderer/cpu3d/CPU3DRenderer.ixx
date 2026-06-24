@@ -22,6 +22,7 @@ import Triangle;
 import RenderPackage3D;
 import Scene3D;
 import Shader;
+import TileTask;
 
 template<typename T>
 concept SceneType = std::derived_from<T, Scene3D>;
@@ -73,7 +74,7 @@ public:
         Int64 rasterizationStart = microTime();
         const UInt64 timeFactor = millisTime();
         const auto uniform = make_unique<Uniform>(sceneSnapShot->lights);
-        uniform->ambient = {255, 240, 230};
+        uniform->ambient = {200, 200, 200};
         uniform->cameraPos = sceneSnapShot->cameraPos;
         uniform->cameraDir = sceneSnapShot->cameraDir;
         for (Int32 i = 0; i < tileCount; i++) {
