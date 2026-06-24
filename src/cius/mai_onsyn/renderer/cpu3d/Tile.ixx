@@ -63,7 +63,8 @@ export class TileTask final : public Runnable {
     Tile* tile;
     FrameBuffer* screenBuffer = nullptr;
     Float* depthBuffer = nullptr;
-    const ScreenTriangle *triangleList;
+    // const ScreenTriangle *triangleList;
+    Uniform* uniform;
 
     UInt64 timeFactor = 0.0f;
 
@@ -106,14 +107,14 @@ export class TileTask final : public Runnable {
         const Boolean unhorizontal_AB = v1.pos.y != v2.pos.y;
         const Boolean unhorizontal_BC = v2.pos.y != v3.pos.y;
 
-        UInt32* texturePixels = nullptr;
-        Int32 textureW = 0;
-        Int32 textureH = 0;
-        if (triangle.texture && triangle.texture->getKdData()) {
-            texturePixels = reinterpret_cast<UInt32*>(triangle.texture->getKdData());
-            textureW = triangle.texture->getWidth();
-            textureH = triangle.texture->getHeight();
-        }
+        // UInt32* texturePixels = nullptr;
+        // Int32 textureW = 0;
+        // Int32 textureH = 0;
+        // if (triangle.texture && triangle.texture->getKdData()) {
+        //     texturePixels = reinterpret_cast<UInt32*>(triangle.texture->getKdData());
+        //     textureW = triangle.texture->getWidth();
+        //     textureH = triangle.texture->getHeight();
+        // }
         // 扫描线填充
         for (Int64 y = ys; y < ye; y++) {
             Int64 xa, xb = v1.pos.x + (v3.pos.x - v1.pos.x) * (y - v1.pos.y) / (v3.pos.y - v1.pos.y);
@@ -157,19 +158,24 @@ export class TileTask final : public Runnable {
 
                 if (depth >= depthRow[x]) {
                     Fragment fragment;
-                    if (texturePixels) {
-                        const Float u = v1.uv.x * w1 + v2.uv.x * w2 + v3.uv.x * w3;
-                        const Float v = v1.uv.y * w1 + v2.uv.y * w2 + v3.uv.y * w3;
-                        Int32 tx = std::min(static_cast<Int32>(u * textureW), textureW - 1);
-                        Int32 ty = std::min(static_cast<Int32>(v * textureH), textureH - 1);
-                        Int32 offset = std::clamp(ty * textureW + tx, 0, textureW * textureH - 1);
-                        fragment.uvColor = std::bit_cast<Color>(texturePixels[offset]);
-                    }
-                    else fragment.uvColor = {static_cast<UInt8>(isBorder ? 255 : 0), 64, 96, 255};
+                    // if (texturePixels) {
+                    //     const Float u = v1.uv.x * w1 + v2.uv.x * w2 + v3.uv.x * w3;
+                    //     const Float v = v1.uv.y * w1 + v2.uv.y * w2 + v3.uv.y * w3;
+                    //     Int32 tx = std::min(static_cast<Int32>(u * textureW), textureW - 1);
+                    //     Int32 ty = std::min(static_cast<Int32>(v * textureH), textureH - 1);
+                    //     Int32 offset = std::clamp(ty * textureW + tx, 0, textureW * textureH - 1);
+                    //     fragment.uvColor = std::bit_cast<Color>(texturePixels[offset]);
+                    // }
+                    // else fragment.uvColor = {static_cast<UInt8>(isBorder ? 255 : 0), 64, 96, 255};
                     // fragment.uvColor = {255, 255, 255, 255};
+                    fragment.x = x;
+                    fragment.y = y;
+                    fragment.u = v1.uv.x * w1 + v2.uv.x * w2 + v3.uv.x * w3;
+                    fragment.v = v1.uv.y * w1 + v2.uv.y * w2 + v3.uv.y * w3;
                     fragment.depth = depth;
                     fragment.normal = v1.normal * w1 + v2.normal * w2 + v3.normal * w3;
-                    const auto [r, g, b, a] = Shader::fragmentShader(fragment);
+                    fragment.worldPos = v1.worldPos * w1 + v2.worldPos * w2 + v3.worldPos * w3;
+                    const auto [r, g, b, a] = Shader::fragmentShader(fragment, triangle.texture, uniform);
 
                     const UInt32 pixelIndex = x << 2;
                     depthRow[x] = depth;
@@ -198,8 +204,8 @@ public:
         this->depthBuffer = depthBuffer;
     }
 
-    void setTriangleList(const ScreenTriangle* triangles) {
-        this->triangleList = triangles;
+    void setUniform(Uniform* uniform) {
+        this->uniform = uniform;
     }
 
     void run() override {

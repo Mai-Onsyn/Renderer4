@@ -149,23 +149,6 @@ export namespace VertexProcessor {
         }
     }
 
-    // ScreenTriangle toScreenTriangle(const ClipVertex& clipV1, const ClipVertex& clipV2, const ClipVertex& clipV3, const Matrix4x4& viewPortMatrix, Texture* texture) {
-    //     const Vector4D v1ndc{clipV1.pos.x / clipV1.pos.w, clipV1.pos.y / clipV1.pos.w, clipV1.pos.z / clipV1.pos.w, 1.0f};
-    //     const Vector4D v2ndc{clipV2.pos.x / clipV2.pos.w, clipV2.pos.y / clipV2.pos.w, clipV2.pos.z / clipV2.pos.w, 1.0f};
-    //     const Vector4D v3ndc{clipV3.pos.x / clipV3.pos.w, clipV3.pos.y / clipV3.pos.w, clipV3.pos.z / clipV3.pos.w, 1.0f};
-    //
-    //     const Vector4D v1vp = viewPortMatrix * v1ndc;
-    //     const Vector4D v2vp = viewPortMatrix * v2ndc;
-    //     const Vector4D v3vp = viewPortMatrix * v3ndc;
-    //
-    //     return {
-    //         {{static_cast<Int64>(v1vp.x), static_cast<Int64>(v1vp.y)}, 1.0f - v1ndc.z, 1 / clipV1.pos.w,  clipV1.normal, clipV1.uv},
-    //         {{static_cast<Int64>(v2vp.x), static_cast<Int64>(v2vp.y)}, 1.0f - v2ndc.z, 1 / clipV2.pos.w,  clipV2.normal, clipV2.uv},
-    //         {{static_cast<Int64>(v3vp.x), static_cast<Int64>(v3vp.y)}, 1.0f - v3ndc.z, 1 / clipV3.pos.w,  clipV3.normal, clipV3.uv},
-    //         texture
-    //     };
-    // }
-
     Boolean isBackFace(const Vector4D& ndc1, const Vector4D& ndc2, const Vector4D& ndc3) {
         return (ndc2.x - ndc1.x) * (ndc3.y - ndc1.y) - (ndc2.y - ndc1.y) * (ndc3.x - ndc1.x) >= 0.0f;
     }
@@ -207,9 +190,9 @@ export namespace VertexProcessor {
         _mm256_store_ps(resVpY, vpY);
 
         result.push_back({
-            {{static_cast<Int64>(resVpX[0]), static_cast<Int64>(resVpY[0])}, 1.0f - resNdcZ[0], resInvW[0], v1.normal, v1.uv},
-            {{static_cast<Int64>(resVpX[1]), static_cast<Int64>(resVpY[1])}, 1.0f - resNdcZ[1], resInvW[1], v2.normal, v2.uv},
-            {{static_cast<Int64>(resVpX[2]), static_cast<Int64>(resVpY[2])}, 1.0f - resNdcZ[2], resInvW[2], v3.normal, v3.uv},
+            {{static_cast<Int64>(resVpX[0]), static_cast<Int64>(resVpY[0])}, 1.0f - resNdcZ[0], resInvW[0], v1.normal, v1.uv, v1.worldPos},
+            {{static_cast<Int64>(resVpX[1]), static_cast<Int64>(resVpY[1])}, 1.0f - resNdcZ[1], resInvW[1], v2.normal, v2.uv, v2.worldPos},
+            {{static_cast<Int64>(resVpX[2]), static_cast<Int64>(resVpY[2])}, 1.0f - resNdcZ[2], resInvW[2], v3.normal, v3.uv, v3.worldPos},
             triangle.texture
         });
     }
@@ -273,9 +256,9 @@ export namespace VertexProcessor {
                 const Vector4D v3vp = viewPortMatrix * v3ndc;
 
                 result.push_back({
-                    {{static_cast<Int64>(v1vp.x), static_cast<Int64>(v1vp.y)}, 1.0f - v1ndc.z, invW1, clipV1.normal, clipV1.uv},
-                    {{static_cast<Int64>(v2vp.x), static_cast<Int64>(v2vp.y)}, 1.0f - v2ndc.z, invW2, clipV2.normal, clipV2.uv},
-                    {{static_cast<Int64>(v3vp.x), static_cast<Int64>(v3vp.y)}, 1.0f - v3ndc.z, invW3, clipV3.normal, clipV3.uv},
+                    {{static_cast<Int64>(v1vp.x), static_cast<Int64>(v1vp.y)}, 1.0f - v1ndc.z, invW1, clipV1.normal, clipV1.uv, clipV1.worldPos},
+                    {{static_cast<Int64>(v2vp.x), static_cast<Int64>(v2vp.y)}, 1.0f - v2ndc.z, invW2, clipV2.normal, clipV2.uv, clipV2.worldPos},
+                    {{static_cast<Int64>(v3vp.x), static_cast<Int64>(v3vp.y)}, 1.0f - v3ndc.z, invW3, clipV3.normal, clipV3.uv, clipV3.worldPos},
                     triangle.texture
                 });
             }
@@ -286,7 +269,7 @@ export namespace VertexProcessor {
     public:
         ClipVertex* resultArray;
         TransformRange range;
-        const Scene3DSnapShot *sceneSnapShot;
+        const Scene3DSnapShot* sceneSnapShot;
         Matrix4x4 m;
         Matrix4x4 vp;
         Matrix3x3 nMatrix;
@@ -406,26 +389,6 @@ export namespace VertexProcessor {
         threadPool.submit(tasks.get(), taskWritePos);
         Int64 mergeStart = millisTime();
 
-        // Int64 totalValidTriangles = 0;
-        // for (Int32 i = 0; i < taskWritePos; i++) {
-        //     auto* t = static_cast<TriangleProcessorTask*>(tasks[i].get());
-        //     totalValidTriangles += t->result.size();
-        // }
-        //
-        // List<ScreenTriangle> finalResult;
-        // // finalResult.clear();
-        // finalResult.resize(totalValidTriangles);
-        //
-        // UInt64 currentOffset = 0;
-        // for (Int32 i = 0; i < taskWritePos; i++) {
-        //     auto* t = static_cast<TriangleProcessorTask*>(tasks[i].get());
-        //     if (!t->result.empty()) {
-        //         std::copy(t->result.begin(), t->result.end(), finalResult.begin() + currentOffset);
-        //         currentOffset += t->result.size();
-        //     }
-        // }
-
-
         List<List<ScreenTriangle>> finalResult;
         finalResult.reserve(taskWritePos);
         for (Int32 i = 0; i < taskWritePos; i++) {
@@ -526,9 +489,9 @@ export namespace VertexProcessor {
                     const Vector4D v3vp = viewPortMatrix * v3ndc;
 
                     result.push_back({
-                        {{static_cast<Int64>(v1vp.x), static_cast<Int64>(v1vp.y)}, 1.0f - v1ndc.z, invW1, clipV1.normal, clipV1.uv},
-                        {{static_cast<Int64>(v2vp.x), static_cast<Int64>(v2vp.y)}, 1.0f - v2ndc.z, invW2, clipV2.normal, clipV2.uv},
-                        {{static_cast<Int64>(v3vp.x), static_cast<Int64>(v3vp.y)}, 1.0f - v3ndc.z, invW3, clipV3.normal, clipV3.uv},
+                        {{static_cast<Int64>(v1vp.x), static_cast<Int64>(v1vp.y)}, 1.0f - v1ndc.z, invW1, clipV1.normal, clipV1.uv, clipV1.worldPos},
+                        {{static_cast<Int64>(v2vp.x), static_cast<Int64>(v2vp.y)}, 1.0f - v2ndc.z, invW2, clipV2.normal, clipV2.uv, clipV2.worldPos},
+                        {{static_cast<Int64>(v3vp.x), static_cast<Int64>(v3vp.y)}, 1.0f - v3ndc.z, invW3, clipV3.normal, clipV3.uv, clipV3.worldPos},
                         triangle.texture
                     });
                 }

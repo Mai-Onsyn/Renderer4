@@ -111,6 +111,10 @@ public:
         return fpsCounter.getAverageFrequency();
     }
 
+    [[nodiscard]] Float get1percentLowestFPS() const {
+        return fpsCounter.getOnePercentLowFrequency();
+    }
+
     void stop() const {
         if (thread) {
             thread->interrupt();

@@ -12,6 +12,6 @@ export struct ScreenVertex {
     Vector3D worldPos;
 
     ScreenVertex() = default;
-    ScreenVertex(const VectorInt2D& pos, const Float depth, const Float invClipW, const Vector3D& normal, const Vector2D& uv) :
-        pos(pos), depth(depth), invClipW(invClipW), normal(normal), uv(uv) {}
+    ScreenVertex(const VectorInt2D& pos, const Float depth, const Float invClipW, const Vector3D& normal, const Vector2D& uv, const Vector3D& worldPos) :
+        pos(pos), depth(depth), invClipW(invClipW), normal(normal), uv(uv), worldPos(worldPos) {}
 };

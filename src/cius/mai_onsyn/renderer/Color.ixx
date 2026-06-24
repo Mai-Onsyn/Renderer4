@@ -4,6 +4,13 @@ export module Color;
 import Types;
 import Format;
 
+inline UInt8 multUint8(const UInt8 a, const UInt8 b) {
+    const UInt32 prod = static_cast<UInt32>(a) * static_cast<UInt32>(b);
+    UInt32 val = (prod << 8) + prod;
+    val += 32768;
+    return static_cast<UInt8>(val >> 16);
+}
+
 export struct Color {
     UInt8 r, g, b, a = 255;
 
@@ -11,6 +18,15 @@ export struct Color {
         : r(r), g(g), b(b), a(a) {}
 
     constexpr Color() = default;
+
+    Color operator*(const Color& other) const noexcept {
+        return {
+            multUint8(r, other.r),
+            multUint8(g, other.g),
+            multUint8(b, other.b),
+            multUint8(a, other.a)
+        };
+    }
 
     String toString() const {
         return format("Color{%d, %d, %d, %d}", r, g, b, a);
