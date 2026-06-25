@@ -10,47 +10,46 @@ export class alignas(32) Vec8f {
     __m256 val;
 
 public:
-    inline Vec8f(__m256 v) : val(v) {}
-    inline Vec8f(const Float v) : val(_mm256_set1_ps(v)) {}
-    inline Vec8f(const Float v1, const Float v2, const Float v3, const Float v4, const Float v5, const Float v6,
+    inline __attribute__((always_inline)) Vec8f(__m256 v) : val(v) {}
+    inline __attribute__((always_inline)) Vec8f(const Float v) : val(_mm256_set1_ps(v)) {}
+    inline __attribute__((always_inline)) Vec8f(const Float v1, const Float v2, const Float v3, const Float v4, const Float v5, const Float v6,
                  const Float v7, const Float v8) : val(_mm256_set_ps(v8, v7, v6, v5, v4, v3, v2, v1)) {}
-    inline Vec8f(const Float* v) : val(_mm256_loadu_ps(v)) {}
+    inline __attribute__((always_inline)) Vec8f(const Float* v) : val(_mm256_loadu_ps(v)) {}
 
-    inline operator Vec8i() const;
-    inline operator __m256() const { return val; }
-    // inline __m256 get() const { return val; }
+    inline __attribute__((always_inline)) operator Vec8i() const;
+    inline __attribute__((always_inline)) operator __m256() const { return val; }
 
-    inline Vec8f operator+(const Vec8f& o) const { return _mm256_add_ps(val, o.val); }
-    inline Vec8f operator-(const Vec8f& o) const { return _mm256_sub_ps(val, o.val); }
-    inline Vec8f operator*(const Vec8f& o) const { return _mm256_mul_ps(val, o.val); }
-    inline Vec8f operator/(const Vec8f& o) const { return _mm256_div_ps(val, o.val); }
+    inline __attribute__((always_inline)) Vec8f operator+(const Vec8f& o) const { return _mm256_add_ps(val, o.val); }
+    inline __attribute__((always_inline)) Vec8f operator-(const Vec8f& o) const { return _mm256_sub_ps(val, o.val); }
+    inline __attribute__((always_inline)) Vec8f operator*(const Vec8f& o) const { return _mm256_mul_ps(val, o.val); }
+    inline __attribute__((always_inline)) Vec8f operator/(const Vec8f& o) const { return _mm256_div_ps(val, o.val); }
 
-    inline Boolean operator>(const Vec8f& o) const { return _mm256_movemask_ps(_mm256_cmp_ps(val, o.val, _CMP_GT_OQ)) != 0; }
-    inline Boolean operator>=(const Vec8f& o) const { return _mm256_movemask_ps(_mm256_cmp_ps(val, o.val, _CMP_GE_OQ)) != 0; }
-    inline Boolean operator<(const Vec8f& o) const { return _mm256_movemask_ps(_mm256_cmp_ps(val, o.val, _CMP_LT_OQ)) != 0; }
-    inline Boolean operator<=(const Vec8f& o) const { return _mm256_movemask_ps(_mm256_cmp_ps(val, o.val, _CMP_LE_OQ)) != 0; }
+    inline __attribute__((always_inline)) Boolean operator>(const Vec8f& o) const { return _mm256_movemask_ps(_mm256_cmp_ps(val, o.val, _CMP_GT_OQ)) != 0; }
+    inline __attribute__((always_inline)) Boolean operator>=(const Vec8f& o) const { return _mm256_movemask_ps(_mm256_cmp_ps(val, o.val, _CMP_GE_OQ)) != 0; }
+    inline __attribute__((always_inline)) Boolean operator<(const Vec8f& o) const { return _mm256_movemask_ps(_mm256_cmp_ps(val, o.val, _CMP_LT_OQ)) != 0; }
+    inline __attribute__((always_inline)) Boolean operator<=(const Vec8f& o) const { return _mm256_movemask_ps(_mm256_cmp_ps(val, o.val, _CMP_LE_OQ)) != 0; }
 
-    inline void operator+=(const Vec8f& o) { val = _mm256_add_ps(val, o.val); }
-    inline void operator-=(const Vec8f& o) { val = _mm256_sub_ps(val, o.val); }
-    inline void operator*=(const Vec8f& o) { val = _mm256_mul_ps(val, o.val); }
-    inline void operator/=(const Vec8f& o) { val = _mm256_div_ps(val, o.val); }
+    inline __attribute__((always_inline)) void operator+=(const Vec8f& o) { val = _mm256_add_ps(val, o.val); }
+    inline __attribute__((always_inline)) void operator-=(const Vec8f& o) { val = _mm256_sub_ps(val, o.val); }
+    inline __attribute__((always_inline)) void operator*=(const Vec8f& o) { val = _mm256_mul_ps(val, o.val); }
+    inline __attribute__((always_inline)) void operator/=(const Vec8f& o) { val = _mm256_div_ps(val, o.val); }
 
-    inline void store(Float* ptr) const { _mm256_storeu_ps(ptr, val); }
-    inline Vec8f sqrt() const { return _mm256_sqrt_ps(val); }
+    inline __attribute__((always_inline)) void store(Float* ptr) const { _mm256_storeu_ps(ptr, val); }
+    inline __attribute__((always_inline)) Vec8f sqrt() const { return _mm256_sqrt_ps(val); }
 
-    inline Vec8f clamp(const Vec8f& min, const Vec8f& max) const {
+    inline __attribute__((always_inline)) Vec8f clamp(const Vec8f& min, const Vec8f& max) const {
         return _mm256_min_ps(_mm256_max_ps(val, min.val), max.val);
     }
 
-    inline Vec8f clamp(const Float lo, const Float hi) const {
+    inline __attribute__((always_inline)) Vec8f clamp(const Float lo, const Float hi) const {
         return _mm256_min_ps(_mm256_max_ps(val, _mm256_set1_ps(lo)), _mm256_set1_ps(hi));
     }
 
-    inline static Vec8f andNot(const Vec8f& a, const Vec8f& b) { return _mm256_andnot_ps(a.val, b.val); }
-    inline static Vec8f max(const Vec8f& a, const Vec8f& b) { return _mm256_max_ps(a.val, b.val); }
-    inline static Vec8f min(const Vec8f& a, const Vec8f& b) { return _mm256_min_ps(a.val, b.val); }
+    inline __attribute__((always_inline)) static Vec8f andNot(const Vec8f& a, const Vec8f& b) { return _mm256_andnot_ps(a.val, b.val); }
+    inline __attribute__((always_inline)) static Vec8f max(const Vec8f& a, const Vec8f& b) { return _mm256_max_ps(a.val, b.val); }
+    inline __attribute__((always_inline)) static Vec8f min(const Vec8f& a, const Vec8f& b) { return _mm256_min_ps(a.val, b.val); }
 
-    inline static Vec8f dot3D(const Vec8f& ax, const Vec8f& ay, const Vec8f& az, const Vec8f& bx, const Vec8f& by, const Vec8f& bz) {
+    inline __attribute__((always_inline)) static Vec8f dot3D(const Vec8f& ax, const Vec8f& ay, const Vec8f& az, const Vec8f& bx, const Vec8f& by, const Vec8f& bz) {
         return ax * bx + ay * by + az * bz;
     }
 };
@@ -59,39 +58,39 @@ export class alignas(32) Vec8i {
     __m256i val;
 
 public:
-    inline Vec8i(__m256i v) : val(v) {}
-    inline Vec8i(const Int32 v) : val(_mm256_set1_epi32(v)) {}
-    inline Vec8i(const Int32 v1, const Int32 v2, const Int32 v3, const Int32 v4, const Int32 v5, const Int32 v6, const Int32 v7, const Int32 v8) :
+    inline __attribute__((always_inline)) Vec8i(__m256i v) : val(v) {}
+    inline __attribute__((always_inline)) Vec8i(const Int32 v) : val(_mm256_set1_epi32(v)) {}
+    inline __attribute__((always_inline)) Vec8i(const Int32 v1, const Int32 v2, const Int32 v3, const Int32 v4, const Int32 v5, const Int32 v6, const Int32 v7, const Int32 v8) :
         val(_mm256_set_epi32(v8, v7, v6, v5, v4, v3, v2, v1)) {}
-    inline Vec8i(const Int32* ptr) : val(_mm256_loadu_si256((__m256i*)ptr)) {}
+    inline __attribute__((always_inline)) Vec8i(const Int32* ptr) : val(_mm256_loadu_si256((__m256i*)ptr)) {}
 
-    inline operator Vec8f() const;
-    inline operator __m256i() const { return val; }
+    inline __attribute__((always_inline)) operator Vec8f() const;
+    inline __attribute__((always_inline)) operator __m256i() const { return val; }
 
-    inline Vec8i operator+(const Vec8i& o) const { return Vec8i(_mm256_add_epi32(val, o.val)); }
-    inline Vec8i operator-(const Vec8i& o) const { return Vec8i(_mm256_sub_epi32(val, o.val)); }
-    inline Vec8i operator*(const Vec8i& o) const { return Vec8i(_mm256_mullo_epi32(val, o.val)); }
+    inline __attribute__((always_inline)) Vec8i operator+(const Vec8i& o) const { return Vec8i(_mm256_add_epi32(val, o.val)); }
+    inline __attribute__((always_inline)) Vec8i operator-(const Vec8i& o) const { return Vec8i(_mm256_sub_epi32(val, o.val)); }
+    inline __attribute__((always_inline)) Vec8i operator*(const Vec8i& o) const { return Vec8i(_mm256_mullo_epi32(val, o.val)); }
 
-    inline void store(Int32* buffer) const { _mm256_store_si256(reinterpret_cast<__m256i *>(buffer), val); }
+    inline __attribute__((always_inline)) void store(Int32* buffer) const { _mm256_store_si256(reinterpret_cast<__m256i *>(buffer), val); }
 
-    inline Vec8i clamp(const Int32 lo, const Int32 hi) const {
+    inline __attribute__((always_inline)) Vec8i clamp(const Int32 lo, const Int32 hi) const {
         return _mm256_min_epi32(_mm256_max_epi32(val, _mm256_set1_epi32(lo)), _mm256_set1_epi32(hi));
     }
 
-    inline Vec8i clamp(const Vec8i& lo, const Vec8i& hi) const {
+    inline __attribute__((always_inline)) Vec8i clamp(const Vec8i& lo, const Vec8i& hi) const {
         return _mm256_min_epi32(_mm256_max_epi32(val, lo.val), hi.val);
     }
 
-    inline static Vec8i max(const Vec8i& a, const Vec8i& b) { return Vec8i(_mm256_max_epi32(a.val, b.val)); }
-    inline static Vec8i min(const Vec8i& a, const Vec8i& b) { return Vec8i(_mm256_min_epi32(a.val, b.val)); }
+    inline __attribute__((always_inline)) static Vec8i max(const Vec8i& a, const Vec8i& b) { return Vec8i(_mm256_max_epi32(a.val, b.val)); }
+    inline __attribute__((always_inline)) static Vec8i min(const Vec8i& a, const Vec8i& b) { return Vec8i(_mm256_min_epi32(a.val, b.val)); }
 };
 
-inline Vec8f::operator Vec8i() const { return {_mm256_cvttps_epi32(val)}; }
+inline __attribute__((always_inline)) Vec8f::operator Vec8i() const { return {_mm256_cvttps_epi32(val)}; }
 
-inline Vec8i::operator Vec8f() const { return {_mm256_cvtepi32_ps(val)}; }
+inline __attribute__((always_inline)) Vec8i::operator Vec8f() const { return {_mm256_cvtepi32_ps(val)}; }
 
 
-export inline void storeColorVec(const __m256i& colorVec, UInt8* ptr) {
+export inline __attribute__((always_inline)) void storeColorVec(const __m256i& colorVec, UInt8* ptr) {
     __m128i lo = _mm256_castsi256_si128(colorVec);
     __m128i hi = _mm256_extracti128_si256(colorVec, 1);
 
@@ -105,7 +104,7 @@ export inline void storeColorVec(const __m256i& colorVec, UInt8* ptr) {
 
 
 // 绝对安全的工业级 SIMD exp 近似（纯浮点运算，无位移风险）
-inline extern __m256 _mm256_exp_ps_safe(__m256 x) {
+inline __attribute__((always_inline)) __m256 _mm256_exp_ps_safe(__m256 x) {
     // 强行把输入限制在安全范围内，防止发生浮点下溢或上溢
     x = _mm256_max_ps(_mm256_set1_ps(-80.0f), _mm256_min_ps(_mm256_set1_ps(80.0f), x));
 
@@ -123,7 +122,7 @@ inline extern __m256 _mm256_exp_ps_safe(__m256 x) {
 }
 
 // 绝对安全的 SIMD log 近似（泰勒展开级数）
-inline extern __m256 _mm256_log_ps_safe(__m256 x) {
+inline __attribute__((always_inline)) __m256 _mm256_log_ps_safe(__m256 x) {
     // 确保底数绝对大于0，防止逼近 -inf
     x = _mm256_max_ps(x, _mm256_set1_ps(1e-4f));
 
@@ -142,7 +141,7 @@ inline extern __m256 _mm256_log_ps_safe(__m256 x) {
 }
 
 // 最终稳定的 pow
-export inline extern __m256 _mm256_pow_ps_approx(__m256 base, __m256 exp) {
+export inline __attribute__((always_inline)) __m256 _mm256_pow_ps_approx(__m256 base, __m256 exp) {
     // 如果高光项 dot 接近 0，直接斩断，不让它进 log 计算
     __m256 mask = _mm256_cmp_ps(base, _mm256_set1_ps(1e-4f), _CMP_GT_OQ);
 

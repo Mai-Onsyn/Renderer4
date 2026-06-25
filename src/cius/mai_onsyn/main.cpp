@@ -37,12 +37,14 @@ void makeTestScene(Application<CPU3DRenderer<Scene3D>>* app) {
     });
     app->addSceneUpdate(task);
     const auto task2 = makeSceneOperation<Scene3D>([](Scene3D* scene) {
-        Transform triangle{};
+        Transform trans{};
         Mesh mesh = OBJ::toMesh(OBJ::load("./assets/meshes/mika/mika test.obj"));
-        // Mesh mesh = OBJ::toMesh(OBJ::load("./assets/meshes/mc_skybox/skybox.obj"));
+        Mesh mesh2 = OBJ::toMesh(OBJ::load("./assets/meshes/mc_skybox/skybox.obj"));
 
-        Entity testEntity{"Misono Mika", move(mesh), move(triangle)};
+        Entity testEntity{"Misono Mika", move(mesh), trans};
+        Entity testEntity2{"Sky Box", move(mesh2), trans};
         scene->addEntity(move(testEntity));
+        scene->addEntity(move(testEntity2));
 
         Log::debug(scene->toString());
     });
