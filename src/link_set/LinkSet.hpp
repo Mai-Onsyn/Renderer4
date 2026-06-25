@@ -1,7 +1,6 @@
 #pragma once
-#ifndef SETCALCULATOR_SET_HPP
-#define SETCALCULATOR_SET_HPP
-#include <memory>
+#ifndef LINK_SET_HPP
+#define LINK_SET_HPP
 #include <sstream>
 
 template<typename T>
@@ -291,6 +290,31 @@ public:
         }
         return result;
     }
-};
+
+    /**
+     * 返回集合的字符串表示
+     * @param highlightIndex 被绿色高亮显示的元素下标
+     * @return 集合的字符串表示
+     */
+    std::string toColoredString(int highlightIndex = -1) const {
+        std::stringstream ss;
+        ss << "{";
+        LinkNode<T>* current = head.next;
+        int index = 0;
+        while (current != nullptr) {
+            if (index == highlightIndex) {
+                ss << "\033[32m" << current->data << "\033[0m";
+            } else {
+                ss << current->data;
+            }
+            if (current->next != nullptr) ss << ", ";
+            current = current->next;
+            ++index;
+        }
+        ss << "}";
+        return ss.str();
+    }
+
+    };
 
 #endif

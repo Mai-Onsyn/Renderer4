@@ -11,6 +11,7 @@ import Vectors;
 import FrameBuffer;
 import Shader;
 import SIMD;
+import Color;
 
 export namespace Rasterizer {
     void drawTriangle(const ScreenTriangle& triangle, const Tile* tile, const FrameBuffer* screenBuffer, Float* depthBuffer, const Uniform* uniform) {
@@ -111,6 +112,17 @@ export namespace Rasterizer {
         const Boolean unhorizontal_AB = v1.pos.y != v2.pos.y;
         const Boolean unhorizontal_BC = v2.pos.y != v3.pos.y;
 
+        Int32 textureWidth = 0;
+        Int32 textureHeight = 0;
+        UInt32* texturePtr = nullptr;
+        if (triangle.texture && triangle.texture->getKdData()) {
+            textureWidth = triangle.texture->map_Kd.width;
+            textureHeight = triangle.texture->map_Kd.height;
+            texturePtr = reinterpret_cast<UInt32*>(triangle.texture->getKdData());
+        }
+        Vec8f textMaxW = Vec8f(static_cast<Float>(textureWidth - 1));
+        Vec8f textMaxH = Vec8f(static_cast<Float>(textureHeight - 1));
+        Vec8f zeroVec = Vec8f(0.0f);
         // 扫描线填充
         for (Int32 y = ys; y < ye; y++) {
             Int32 xa, xb = v1.pos.x + (v3.pos.x - v1.pos.x) * (y - v1.pos.y) / (v3.pos.y - v1.pos.y);
@@ -129,8 +141,7 @@ export namespace Rasterizer {
             Float* depthRow = depthBuffer + y * screenBuffer->width;
 
             alignas(32) Float depthStackBuffer[8];
-            alignas(32) Float uStackBuffer[8];
-            alignas(32) Float vStackBuffer[8];
+            alignas(32) Int32 uvOffsetStackBuffer[8];
 
             for (Int32 x = xs; x < xe; x += 8) {
                 Int32 size = std::min(xe - x, 8);
@@ -169,25 +180,34 @@ export namespace Rasterizer {
                 Vec8f v8f = Vec8f(v1.uv.y) * w1 + Vec8f(v2.uv.y) * w2 + Vec8f(v3.uv.y) * w3;
 
                 depth8f.store(depthStackBuffer);
-                u8f.store(uStackBuffer);
-                v8f.store(vStackBuffer);
+                // u8f.store(uStackBuffer);
+                // v8f.store(vStackBuffer);
+
+                Vec8i textX = static_cast<Vec8i>(u8f * Vec8f(textureWidth)).clamp(zeroVec, textMaxW);
+                Vec8i textY = static_cast<Vec8i>(v8f * Vec8f(textureHeight)).clamp(zeroVec, textMaxH);
+                Vec8i offsets = textY * Vec8i(textureWidth) + textX;
+
+                offsets.store(uvOffsetStackBuffer);
 
                 for (Int64 i = 0; i < size; i++) {
-                    Fragment fragment;
-                    fragment.u = uStackBuffer[i];
-                    fragment.v = vStackBuffer[i];
-                    const auto [r, g, b, a] = Shader::fragmentShader_NoLight(fragment, triangle.texture);
+                    // Fragment fragment;
+                    // fragment.u = uStackBuffer[i];
+                    // fragment.v = vStackBuffer[i];
+                    // const auto [r, g, b, a] = Shader::fragmentShader_NoLight(fragment, triangle.texture);
+                    if (texturePtr) {
+                        const auto [r, g, b, a] = std::bit_cast<Color>(texturePtr[uvOffsetStackBuffer[i]]);
 
-                    const Float depth = depthStackBuffer[i];
-                    const Int32 col = x + i;
+                        const Float depth = depthStackBuffer[i];
+                        const Int32 col = x + i;
 
-                    if (depth >= depthRow[col]) {
-                        const UInt32 pixelIndex = col << 2;
-                        depthRow[col] = depth;
-                        screenRow[pixelIndex] = r;
-                        screenRow[pixelIndex + 1] = g;
-                        screenRow[pixelIndex + 2] = b;
-                        screenRow[pixelIndex + 3] = a;
+                        if (depth >= depthRow[col]) {
+                            const UInt32 pixelIndex = col << 2;
+                            depthRow[col] = depth;
+                            screenRow[pixelIndex] = r;
+                            screenRow[pixelIndex + 1] = g;
+                            screenRow[pixelIndex + 2] = b;
+                            screenRow[pixelIndex + 3] = a;
+                        }
                     }
                 }
             }

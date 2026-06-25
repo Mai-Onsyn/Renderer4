@@ -140,3 +140,74 @@ int main() {
 }
 
 #endif
+
+// #define LINK_SET_CONSOLE
+
+#ifdef LINK_SET_CONSOLE
+#include <string>
+#include "MainPanel.hpp"
+#include <conio.h>
+
+int main() {
+    system("chcp 65001");
+    MainPanel mainPanel = MainPanel();
+    mainPanel.show();
+    while (true) {
+        int choice =getChoice();
+        choice = tolower(choice);
+        switch (choice) {
+            case 'q': {
+                mainPanel.setSetA();
+                mainPanel.show();
+                break;
+            }
+            case 'w': {
+                mainPanel.setSetB();
+                mainPanel.show();
+                break;
+            }
+            case'e':{
+                mainPanel.indexOfSet();
+                mainPanel.show();
+                break;
+            }
+            case'r': {
+                mainPanel.insertSet();
+                mainPanel.show();
+                break;
+            }
+            case 't': {
+                mainPanel.intersectionSet();
+                mainPanel.show();
+                break;
+            }
+            case 'a': {
+                mainPanel.unionSet();
+                mainPanel.show();
+                break;
+            }
+            case 's': {
+                mainPanel.differenceSet();
+                mainPanel.show();
+                break;
+            }
+            case 'd': {
+                mainPanel.symmetricDifference();
+                mainPanel.show();
+                break;
+            }
+            case 'f': {
+                mainPanel.clearSet();
+                mainPanel.show();
+                break;
+            }
+            case 27: {
+                return 0;
+            }
+            default: {
+
+            }
+        }
+    }
+}
+#endif

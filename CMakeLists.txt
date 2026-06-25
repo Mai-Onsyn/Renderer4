@@ -27,6 +27,7 @@ target_link_libraries(${PROJECT_NAME} glfw)
 target_compile_options(${PROJECT_NAME} PRIVATE -mavx2 -mfma)
 
 target_include_directories(${PROJECT_NAME} PRIVATE "libs")
+target_include_directories(${PROJECT_NAME} PRIVATE "src/link_set")
 
 target_sources(${PROJECT_NAME} PUBLIC
         FILE_SET CXX_MODULES
