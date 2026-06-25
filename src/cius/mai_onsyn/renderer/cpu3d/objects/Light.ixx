@@ -13,7 +13,7 @@ export enum class LightType {
 export struct Light {
     String name;
     Vector3D pos;
-    Color color;
+    FColor color;
     LightType type;
     Vector3D dir = {0, 0, 0};
     Float intensity = 0.6f;
@@ -28,6 +28,6 @@ export struct Light {
           type(type) {}
 
     String toString() const {
-        return format("Light{name=%s, pos=%s, color=%s}", name, pos.toString(), color.toString());
+        return format("Light{name=%s, pos=%s, color=%s}", name, pos.toString(), static_cast<Color>(color).toString());
     }
 };

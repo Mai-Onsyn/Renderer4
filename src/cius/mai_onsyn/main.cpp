@@ -23,11 +23,11 @@ void makeTestScene(Application<CPU3DRenderer<Scene3D>>* app) {
         String localData = "Hello";
         Transform triangle{};
         Mesh trianglePiece;
-        UniquePtr<Texture> texture(new Texture("./assets/textures/uv_map_test.png"));
-        trianglePiece.vertices.emplace_back(Vertex{{-1, 1, 0}, {0, 0, -1}, {0, 0}});
-        trianglePiece.vertices.emplace_back(Vertex{{-1, -1, 0}, {0, 0, -1}, {0, 1}});
-        trianglePiece.vertices.emplace_back(Vertex{{1, -1, 0}, {0, 0, -1}, {1, 1}});
-        trianglePiece.triangles.emplace_back(0, 1, 2, texture.get());
+        UniquePtr<Texture> texture(new Texture("./assets/textures/uv_map_test.png"));;
+        trianglePiece.vertices.emplace_back(Vertex{{-1, 35+1, 0}, {0, 0, -1}, {0, 0}});
+        trianglePiece.vertices.emplace_back(Vertex{{-1, 35-1, 0}, {0, 0, -1}, {0, 1}});
+        trianglePiece.vertices.emplace_back(Vertex{{1, 35-1, 0}, {0, 0, -1}, {1, 1}});
+        trianglePiece.triangles.emplace_back(0, 2, 1, texture.get());
         trianglePiece.texture.push_back(move(texture));
         Entity testEntity{"Test Entity", move(trianglePiece), move(triangle)};
         scene->addEntity(move(testEntity));
