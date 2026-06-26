@@ -44,7 +44,7 @@ public:
 
     Renderer(const Int32 width, const Int32 height):
         tripleBuffer(width, height),
-        depthBuffer(makeFloatBuffer(width * height)),
+        depthBuffer(makeFloatBuffer(width * height + 8)),
         width(width), height(height) {}
 
     virtual ~Renderer() {
@@ -72,7 +72,7 @@ public:
                     Int32 target_h = pending_height.load(std::memory_order_relaxed);
 
                     tripleBuffer.resize(target_w, target_h);
-                    depthBuffer.reset(new Float[target_w * target_h]);
+                    depthBuffer.reset(new Float[target_w * target_h + 8]);
                     this->width = target_w;
                     this->height = target_h;
 

@@ -1,5 +1,6 @@
 module;
 #include <algorithm>
+#include <cstring>
 #include <immintrin.h>
 export module Rasterizer;
 import Types;
@@ -148,7 +149,7 @@ export namespace Rasterizer {
 
             for (Int32 x = xs; x < xe; x += 8) {
                 Int32 size = std::min(xe - x, 8);
-                _m256_Fragment fragment;
+                _m256_Fragment fragment{};
 
                 Vec8f subX = Vec8f(x) + Vec8f(0, 1, 2, 3, 4, 5, 6, 7);
                 Vec8f subY = Vec8f(y);
@@ -170,6 +171,15 @@ export namespace Rasterizer {
                 Vec8f betaS = sAPC * invABC;
                 Vec8f gammaS = Vec8f(1.0f) - (alphaS + betaS);
 
+                Vec8f depth8f = Vec8f(v1.depth) * alphaS + Vec8f(v2.depth) * betaS + Vec8f(v3.depth) * gammaS;
+
+                // 批量深度剔除
+                __m256 rowDepth = _mm256_loadu_ps(&depthRow[x]);
+                __m256 cmp = _mm256_cmp_ps(depth8f, rowDepth, _CMP_GT_OQ);
+                Int32 mask = _mm256_movemask_ps(cmp);
+                if ((((size == 8) ? 0xFF : ((1 << size) - 1)) & mask) == 0) continue;
+                depth8f.store(depthStackBuffer);
+
                 Vec8f n1 = alphaS * Vec8f(v1.invClipW);
                 Vec8f n2 = betaS * Vec8f(v2.invClipW);
                 Vec8f n3 = gammaS * Vec8f(v3.invClipW);
@@ -180,22 +190,15 @@ export namespace Rasterizer {
                 Vec8f w2 = n2 * invSub;
                 Vec8f w3 = n3 * invSub;
 
-                Vec8f depth8f = Vec8f(v1.depth) * w1 + Vec8f(v2.depth) * w2 + Vec8f(v3.depth) * w3;
-
-                // 批量深度剔除
-                __m256 rowDepth = _mm256_loadu_ps(&depthRow[x]);
-                __m256 cmp = _mm256_cmp_ps(depth8f, rowDepth, _CMP_GT_OQ);
-                Int32 mask = _mm256_movemask_ps(cmp);
-                if ((((size == 8) ? 0xFF : ((1 << size) - 1)) & mask) == 0) continue;
-                depth8f.store(depthStackBuffer);
-
                 // 批量纹理坐标转换
-                Vec8f u8f = Vec8f(v1.uv.x) * w1 + Vec8f(v2.uv.x) * w2 + Vec8f(v3.uv.x) * w3;
-                Vec8f v8f = Vec8f(v1.uv.y) * w1 + Vec8f(v2.uv.y) * w2 + Vec8f(v3.uv.y) * w3;
-                Vec8i textX = static_cast<Vec8i>(u8f * Vec8f(textureWidth)).clamp(0, textureWidth - 1);
-                Vec8i textY = static_cast<Vec8i>(v8f * Vec8f(textureHeight)).clamp(0, textureHeight - 1);
-                Vec8i uvOffsets = textY * Vec8i(textureWidth) + textX;
-                uvOffsets.store(uvOffsetStackBuffer);
+                if (texturePtr) {
+                    Vec8f u8f = Vec8f(v1.uv.x) * w1 + Vec8f(v2.uv.x) * w2 + Vec8f(v3.uv.x) * w3;
+                    Vec8f v8f = Vec8f(v1.uv.y) * w1 + Vec8f(v2.uv.y) * w2 + Vec8f(v3.uv.y) * w3;
+                    Vec8i textX = static_cast<Vec8i>(u8f * Vec8f(textureWidth)).clamp(0, textureWidth - 1);
+                    Vec8i textY = static_cast<Vec8i>(v8f * Vec8f(textureHeight)).clamp(0, textureHeight - 1);
+                    Vec8i uvOffsets = textY * Vec8i(textureWidth) + textX;
+                    uvOffsets.store(uvOffsetStackBuffer);
+                }
 
                 // 法向量插值并归一化
                 Vec8f nx_nn  = Vec8f(v1.normal.x) * w1 + Vec8f(v2.normal.x) * w2 + Vec8f(v3.normal.x) * w3;
@@ -224,6 +227,10 @@ export namespace Rasterizer {
                         fragment.uvR[i] = r;
                         fragment.uvG[i] = g;
                         fragment.uvB[i] = b;
+                    } else {
+                        fragment.uvR[i] = 255;
+                        fragment.uvG[i] = 255;
+                        fragment.uvB[i] = 255;
                     }
                 }
 

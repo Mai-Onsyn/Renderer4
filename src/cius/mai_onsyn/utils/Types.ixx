@@ -3,6 +3,7 @@ module;
 #include <latch>
 #include <map>
 #include <memory>
+#include <set>
 #include <vector>
 export module Types;
 
@@ -49,6 +50,7 @@ export inline FloatBuffer makeFloatBuffer(const UInt32 size) {
 export template<typename T> using List = std::vector<T>;
 export template<typename T> using Atomic = std::atomic<T>;
 export template<typename K, typename V> using Map = std::map<K, V>;
+export template<typename T> using Set = std::set<T>;
 export template<typename K, typename V> using Pair = std::pair<K, V>;
 export template<typename T> using UniquePtr = std::unique_ptr<T>;
 export template<typename T> using SharedPtr = std::shared_ptr<T>;

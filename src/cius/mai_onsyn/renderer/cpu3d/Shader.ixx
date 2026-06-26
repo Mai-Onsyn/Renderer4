@@ -64,7 +64,7 @@ export namespace Shader {
             for (auto& light : uniform->lights) {
                 Vector3D L_dir = light.pos - fragment.worldPos;     // 光源方向
                 Float d_i = L_dir.length();                         // 光源距离
-                if (d_i > light.range) continue;
+                // if (d_i > light.range) continue;
                 Vector3D L = L_dir / d_i;                           // 光源方向单位向量
 
                 Float attn_dist = 1 / (1 + light.a * d_i + light.b * d_i * d_i);

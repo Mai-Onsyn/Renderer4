@@ -189,6 +189,8 @@ export namespace VertexProcessor {
         _mm256_store_ps(resVpX, vpX);
         _mm256_store_ps(resVpY, vpY);
 
+
+
         result.push_back({
             {{static_cast<Int64>(resVpX[0]), static_cast<Int64>(resVpY[0])}, 1.0f - resNdcZ[0], resInvW[0], v1.normal, v1.uv, v1.worldPos},
             {{static_cast<Int64>(resVpX[1]), static_cast<Int64>(resVpY[1])}, 1.0f - resNdcZ[1], resInvW[1], v2.normal, v2.uv, v2.worldPos},

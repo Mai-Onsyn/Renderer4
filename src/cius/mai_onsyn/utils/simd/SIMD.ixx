@@ -71,7 +71,7 @@ public:
     inline __attribute__((always_inline)) Vec8i operator-(const Vec8i& o) const { return Vec8i(_mm256_sub_epi32(val, o.val)); }
     inline __attribute__((always_inline)) Vec8i operator*(const Vec8i& o) const { return Vec8i(_mm256_mullo_epi32(val, o.val)); }
 
-    inline __attribute__((always_inline)) void store(Int32* buffer) const { _mm256_store_si256(reinterpret_cast<__m256i *>(buffer), val); }
+    inline __attribute__((always_inline)) void store(Int32* buffer) const { _mm256_storeu_si256(reinterpret_cast<__m256i *>(buffer), val); }
 
     inline __attribute__((always_inline)) Vec8i clamp(const Int32 lo, const Int32 hi) const {
         return _mm256_min_epi32(_mm256_max_epi32(val, _mm256_set1_epi32(lo)), _mm256_set1_epi32(hi));

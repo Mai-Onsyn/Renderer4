@@ -1,5 +1,6 @@
 module;
 #include <immintrin.h>
+#include <cmath>
 export module TileTask;
 import Types;
 import Thread;
@@ -26,14 +27,22 @@ export class TileTask final : public Runnable {
         const __m256i depthVec = _mm256_set1_epi32(0);
         auto* pixels = reinterpret_cast<UInt32*>(screenBuffer->getBuffer());
         auto* depths = reinterpret_cast<Float*>(depthBuffer);
-        for (UInt32 y = tile->y; y < tile->y + tile->height; y++) {
+
+        // 计算安全的裁剪边界
+        const UInt32 maxY = std::min(tile->y + tile->height, screenBuffer->height);
+        const UInt32 maxX = std::min(tile->x + tile->width, screenBuffer->width);
+
+        for (UInt32 y = tile->y; y < maxY; y++) {
             const UInt32 rowOffset = y * screenBuffer->width;
             UInt32 x = tile->x;
-            for (; x < tile->x + (tile->width & ~7); x += 8) {
+
+            // 计算当前行剩余可用的安全宽度
+            UInt32 span = maxX - x;
+            for (; x < tile->x + (span & ~7); x += 8) {
                 _mm256_storeu_si256(reinterpret_cast<__m256i*>(&pixels[rowOffset + x]), colorVec);
                 _mm256_storeu_si256(reinterpret_cast<__m256i*>(&depths[rowOffset + x]), depthVec);
             }
-            for (; x < tile->x + tile->width; x++) {
+            for (; x < maxX; x++) {
                 pixels[rowOffset + x] = color;
                 depths[rowOffset + x] = 0.0f;
             }

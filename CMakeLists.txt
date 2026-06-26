@@ -1,11 +1,8 @@
 cmake_minimum_required(VERSION 4.0)
 project(Renderer4)
 
-#set(CMAKE_CXX_FLAGS_DEBUG "-O2 -g3 -fno-omit-frame-pointer -mstackrealign")
-set(CMAKE_CXX_FLAGS_DEBUG "-O2")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O2")
 set(CMAKE_CXX_STANDARD 23)
-#    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-#    set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD ON)
 
 find_package(OpenGL REQUIRED)
 

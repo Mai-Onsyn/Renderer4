@@ -244,10 +244,26 @@ export namespace OBJ {
         mesh.triangles.reserve(obj.faces.size());
         std::unordered_map<IndexTuple, UInt32, IndexTupleHash> uniqueVertices;
 
-        for (const auto& [start, end, mtlName] : obj.faceMtls) {
+        List<FaceMtlRange> ranges;
+        if (obj.faceMtls.empty() && !obj.faces.empty()) {
+            FaceMtlRange defaultRange;
+            defaultRange.start = 0;
+            defaultRange.end = obj.faces.size();
+            defaultRange.mtlName = "";  // 空名称，后续查找材质时会失败，texture 为 nullptr
+            ranges.push_back(defaultRange);
+
+            mesh.texture.push_back(make_unique<Texture>());
+            mesh.texture.back()->map_Kd = Image(1, 1, std::make_shared<UInt8[]>(4));
+        } else {
+            ranges = obj.faceMtls;  // 直接使用已有的范围
+        }
+
+        for (const auto& [start, end, mtlName] : ranges) {
             Texture* texture = nullptr;
             if (mtlIndexes.contains(mtlName)) {
                 texture = mesh.texture[mtlIndexes[mtlName]].get();
+            } else {
+                texture = mesh.texture.back().get();
             }
 
             for (UInt32 i = start; i < end; i++) {

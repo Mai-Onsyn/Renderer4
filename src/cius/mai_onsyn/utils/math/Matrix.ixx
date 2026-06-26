@@ -118,9 +118,19 @@ public:
 
     static Matrix4x4 I() {
         Matrix4x4 matrix4;
-        for (int i = 0; i < 4; i++) {
-            matrix4.m[i * 4 + i] = 1;
-        }
+        matrix4[0] = 1;
+        matrix4[5] = 1;
+        matrix4[10] = 1;
+        matrix4[15] = 1;
+        return matrix4;
+    }
+
+    static Matrix4x4 scale(const Float s) {
+        Matrix4x4 matrix4;
+        matrix4[0] = s;
+        matrix4[5] = s;
+        matrix4[10] = s;
+        matrix4[15] = 1;
         return matrix4;
     }
 

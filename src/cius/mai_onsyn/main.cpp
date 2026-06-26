@@ -32,14 +32,20 @@ void makeTestScene(Application<CPU3DRenderer<Scene3D>>* app) {
         Entity testEntity{"Test Entity", move(trianglePiece), move(triangle)};
         scene->addEntity(move(testEntity));
 
-        Light light{"World Light", {20, 60, -30}, {255, 255, 255, 255}};
+        Light light{"World Light Red", {20, 60, -30}, {255, 0, 0, 255}};
         scene->addLight(move(light));
+        Light light2{"World Light Blue", {-20, 60, -30}, {0, 0, 255, 255}};
+        scene->addLight(move(light2));
+        Light light3{"World Light Green", {0, 60, -30}, {0, 255, 0, 255}};
+        scene->addLight(move(light3));
     });
     app->addSceneUpdate(task);
     const auto task2 = makeSceneOperation<Scene3D>([](Scene3D* scene) {
         Transform trans{};
         Mesh mesh = OBJ::toMesh(OBJ::load("./assets/meshes/mika/mika test.obj"));
-        Mesh mesh2 = OBJ::toMesh(OBJ::load("./assets/meshes/mc_skybox/skybox.obj"));
+        Mesh mesh2 = OBJ::toMesh(OBJ::load("./assets/meshes/teapot/teapot.obj"));
+        Log::debug("Mesh Mika Llegal: %b", mesh.check());
+        Log::debug("Mesh Teapot Llegal: %b", mesh2.check());
 
         Entity testEntity{"Misono Mika", move(mesh), trans};
         Entity testEntity2{"Sky Box", move(mesh2), trans};
