@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 4.0)
 project(Renderer4)
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O2")
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(OpenGL REQUIRED)
 
@@ -18,14 +18,9 @@ file(GLOB_RECURSE MODULES "src/*.ixx")
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
-target_link_libraries(${PROJECT_NAME} glad)
-target_link_libraries(${PROJECT_NAME} OpenGL::GL)
-target_link_libraries(${PROJECT_NAME} glfw)
+target_link_libraries(${PROJECT_NAME} glad OpenGL::GL glfw)
 
-target_compile_options(${PROJECT_NAME} PRIVATE -mavx2 -mfma)
-
-target_include_directories(${PROJECT_NAME} PRIVATE "libs")
-target_include_directories(${PROJECT_NAME} PRIVATE "src/link_set")
+target_include_directories(${PROJECT_NAME} PRIVATE "libs" "src/link_set")
 
 target_sources(${PROJECT_NAME} PUBLIC
         FILE_SET CXX_MODULES
@@ -33,13 +28,18 @@ target_sources(${PROJECT_NAME} PUBLIC
         FILES ${MODULES}
 )
 
-if(MINGW)
+if (MSVC)
+    add_compile_options(/arch:AVX2)
+    #    add_compile_options(/fsanitize=address /Zi)
+    #    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    target_compile_options(${PROJECT_NAME} PRIVATE /utf-8)
+endif ()
+
+if (MINGW)
+    target_compile_options(${PROJECT_NAME} PRIVATE -mavx2 -mfma)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
     add_link_options(-static-libgcc -static-libstdc++)
-
-    # add_link_options(-static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lpthread)
-endif()
-
+endif ()
 
 file(GLOB_RECURSE ASSETS_FILES
         CONFIGURE_DEPENDS
