@@ -53,6 +53,8 @@ public:
         return _mm256_min_ps(_mm256_max_ps(val, _mm256_set1_ps(lo)), _mm256_set1_ps(hi));
     }
 
+    FORCE_INLINE Vec8f floor() const { return _mm256_floor_ps(val); }
+
     FORCE_INLINE static Vec8f andNot(const Vec8f& a, const Vec8f& b) { return _mm256_andnot_ps(a.val, b.val); }
     FORCE_INLINE static Vec8f max(const Vec8f& a, const Vec8f& b) { return _mm256_max_ps(a.val, b.val); }
     FORCE_INLINE static Vec8f min(const Vec8f& a, const Vec8f& b) { return _mm256_min_ps(a.val, b.val); }

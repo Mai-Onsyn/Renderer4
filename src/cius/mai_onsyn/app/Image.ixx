@@ -61,7 +61,7 @@ public:
         Log::debug("Loading image from %s", path);
         Int32 width, height, channels;
         const auto data = stbi_load(path.c_str(), &width, &height, &channels, 4);
-        if (!data && width * height == 0) {
+        if (!data || width * height <= 0) {
             Log::error("Failed to load image: %s", path);
             return Image{0, 0};
         }

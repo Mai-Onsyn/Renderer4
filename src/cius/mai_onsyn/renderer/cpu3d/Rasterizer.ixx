@@ -64,6 +64,9 @@ export namespace Rasterizer {
                 const Float beta_s = static_cast<Float>(sAPC) * sABC_inv;
                 const Float gamma_s = 1.0f - alpha_s - beta_s;
 
+                const Float depth = v1.depth * alpha_s + v2.depth * beta_s + v3.depth * gamma_s;
+                if (depth < depthRow[x]) continue;
+
                 const Float numerator1 = alpha_s * v1.invClipW;
                 const Float numerator2 = beta_s * v2.invClipW;
                 const Float numerator3 = gamma_s * v3.invClipW;
@@ -73,24 +76,20 @@ export namespace Rasterizer {
                 const Float w2 = numerator2 * invSub;
                 const Float w3 = numerator3 * invSub;
 
-                const Float depth = v1.depth * w1 + v2.depth * w2 + v3.depth * w3;
+                Fragment fragment;
+                fragment.u = v1.uv.x * w1 + v2.uv.x * w2 + v3.uv.x * w3;
+                fragment.v = v1.uv.y * w1 + v2.uv.y * w2 + v3.uv.y * w3;
+                fragment.normal = v1.normal * w1 + v2.normal * w2 + v3.normal * w3;
+                fragment.worldPos = v1.worldPos * w1 + v2.worldPos * w2 + v3.worldPos * w3;
+                const auto [r, g, b, a] = Shader::fragmentShader_Sequence(fragment, triangle.texture, uniform);
+                // const auto [r, g, b, a] = Shader::fragmentShader_NoLight(fragment, triangle.texture);
 
-                if (depth >= depthRow[x]) {
-                    Fragment fragment;
-                    fragment.u = v1.uv.x * w1 + v2.uv.x * w2 + v3.uv.x * w3;
-                    fragment.v = v1.uv.y * w1 + v2.uv.y * w2 + v3.uv.y * w3;
-                    fragment.normal = v1.normal * w1 + v2.normal * w2 + v3.normal * w3;
-                    fragment.worldPos = v1.worldPos * w1 + v2.worldPos * w2 + v3.worldPos * w3;
-                    const auto [r, g, b, a] = Shader::fragmentShader_Sequence(fragment, triangle.texture, uniform);
-                    // const auto [r, g, b, a] = Shader::fragmentShader_NoLight(fragment, triangle.texture);
-
-                    const UInt32 pixelIndex = x << 2;
-                    depthRow[x] = depth;
-                    screenRow[pixelIndex] = r;
-                    screenRow[pixelIndex + 1] = g;
-                    screenRow[pixelIndex + 2] = b;
-                    screenRow[pixelIndex + 3] = a;
-                }
+                const UInt32 pixelIndex = x << 2;
+                depthRow[x] = depth;
+                screenRow[pixelIndex] = r;
+                screenRow[pixelIndex + 1] = g;
+                screenRow[pixelIndex + 2] = b;
+                screenRow[pixelIndex + 3] = a;
             }
         }
     }
@@ -195,6 +194,8 @@ export namespace Rasterizer {
                 if (texturePtr) {
                     Vec8f u8f = Vec8f(v1.uv.x) * w1 + Vec8f(v2.uv.x) * w2 + Vec8f(v3.uv.x) * w3;
                     Vec8f v8f = Vec8f(v1.uv.y) * w1 + Vec8f(v2.uv.y) * w2 + Vec8f(v3.uv.y) * w3;
+                    u8f = u8f - u8f.floor();
+                    v8f = v8f - v8f.floor();
                     Vec8i textX = static_cast<Vec8i>(u8f * Vec8f(textureWidth)).clamp(0, textureWidth - 1);
                     Vec8i textY = static_cast<Vec8i>(v8f * Vec8f(textureHeight)).clamp(0, textureHeight - 1);
                     Vec8i uvOffsets = textY * Vec8i(textureWidth) + textX;
@@ -236,7 +237,7 @@ export namespace Rasterizer {
                 }
 
                 // 并行光照计算
-                auto [r, g, b, a] = Shader::fragmentShader_avx2(fragment, triangle.texture, uniform, size);
+                auto [r, g, b, a] = Shader::fragmentShader_avx2(fragment, triangle.texture, uniform);
                 // auto [r, g, b, a] = Shader::fragmentShader_avx2_NoLight(fragment);
 
                 // 填充像素

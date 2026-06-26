@@ -16,6 +16,7 @@ import Logger;
 import CPU3DRenderer;
 import Scene;
 import Texture;
+import Matrix;
 import OBJ;
 
 void makeTestScene(Application<CPU3DRenderer<Scene3D>>* app) {
@@ -41,19 +42,26 @@ void makeTestScene(Application<CPU3DRenderer<Scene3D>>* app) {
 
         Light whiteLight{"World Light White", {-30, 60, -30}, {255, 255, 255, 255}};
         scene->addLight(move(whiteLight));
+        // Light sponzaPalaceLight{"Sponza Palace Light", {-40, 15, -25}, {128, 192, 255, 255}};
+        // scene->addLight(move(sponzaPalaceLight));
     });
     app->addSceneUpdate(task);
     const auto task2 = makeSceneOperation<Scene3D>([](Scene3D* scene) {
         Transform trans{};
         Mesh mesh = OBJ::toMesh(OBJ::load("./assets/meshes/mika/mika test.obj"));
-        Mesh mesh2 = OBJ::toMesh(OBJ::load("./assets/meshes/teapot/teapot.obj"));
         Log::debug("Mesh Mika Llegal: %b", mesh.check());
-        Log::debug("Mesh Teapot Llegal: %b", mesh2.check());
-
         Entity testEntity{"Misono Mika", move(mesh), trans};
-        Entity testEntity2{"Sky Box", move(mesh2), trans};
         scene->addEntity(move(testEntity));
+
+        Mesh mesh2 = OBJ::toMesh(OBJ::load("./assets/meshes/the-utah-teapot/teapot.obj"));
+        Log::debug("Mesh Teapot Llegal: %b", mesh2.check());
+        Entity testEntity2{"Teapot", move(mesh2), Transform{Matrix4x4::scale(0.3) * Matrix4x4::translate({50, 0, 0})}};
         scene->addEntity(move(testEntity2));
+
+        Mesh mesh3 = OBJ::toMesh(OBJ::load("./assets/meshes/Sponza Palace/scene.obj"));
+        Log::debug("Mesh Teapot Llegal: %b", mesh3.check());
+        Entity testEntity3{"Sponza Palace", move(mesh3), Transform{Matrix4x4::scale(1) * Matrix4x4::translate({-50, 0, 0})}};
+        scene->addEntity(move(testEntity3));
 
         Log::debug(scene->toString());
     });

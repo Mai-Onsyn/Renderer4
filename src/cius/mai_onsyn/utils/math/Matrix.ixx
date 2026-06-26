@@ -134,6 +134,14 @@ public:
         return matrix4;
     }
 
+    static Matrix4x4 translate(const Vector3D& v) {
+        Matrix4x4 matrix = I();
+        matrix[3] = v.x;
+        matrix[7] = v.y;
+        matrix[11] = v.z;
+        return matrix;
+    }
+
     explicit operator Matrix3x3() const {
         return {m[0], m[1], m[2], m[4], m[5], m[6], m[8], m[9], m[10]};
     }

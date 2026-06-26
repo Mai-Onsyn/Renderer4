@@ -102,7 +102,7 @@ export namespace OBJ {
             List<String> tokens = split(trimmed, " ");
             if (tokens.empty()) continue;
             if (tokens[0] == "newmtl" && tokens.size() >= 2) {
-                currentMtlName = trim(line.substr(7));
+                currentMtlName = trim(trimmed.substr(7));
                 MtlObject mtl;
                 mtl.name = currentMtlName;
                 mtls[currentMtlName] = move(mtl);
@@ -123,16 +123,16 @@ export namespace OBJ {
                 mtls[currentMtlName].d = stof(tokens[1]);
             }
             else if (tokens[0] == "map_Kd" && tokens.size() >= 2) {
-                mtls[currentMtlName].map_Kd = mtlFileDir.string() + '/' + trim(line.substr(7));
+                mtls[currentMtlName].map_Kd = mtlFileDir.string() + '/' + trim(trimmed.substr(7));
             }
             else if (tokens[0] == "map_Ks" && tokens.size() >= 2) {
-                mtls[currentMtlName].map_Ks = mtlFileDir.string() + '/' + trim(line.substr(7));
+                mtls[currentMtlName].map_Ks = mtlFileDir.string() + '/' + trim(trimmed.substr(7));
             }
             else if (tokens[0] == "map_d" && tokens.size() >= 2) {
-                mtls[currentMtlName].map_d = mtlFileDir.string() + '/' + trim(line.substr(6));
+                mtls[currentMtlName].map_d = mtlFileDir.string() + '/' + trim(trimmed.substr(6));
             }
             else if (tokens[0] == "map_bump" && tokens.size() >= 2) {
-                mtls[currentMtlName].map_bump = mtlFileDir.string() + '/' + trim(line.substr(9));
+                mtls[currentMtlName].map_bump = mtlFileDir.string() + '/' + trim(trimmed.substr(9));
             }
         }
         return mtls;
@@ -178,7 +178,7 @@ export namespace OBJ {
                 obj.faces.emplace_back(face);
             }
             else if (lineType == "mtllib" && tokens.size() >= 2) {
-                obj.mtls.merge(loadMtl(objFileDir.string() + '/' + trim(line.substr(7))));
+                obj.mtls.merge(loadMtl(objFileDir.string() + '/' + trim(trimmed.substr(7))));
             }
             else if (lineType == "usemtl" && tokens.size() >= 2) {
                 if (firstUseMtl) {
@@ -189,7 +189,7 @@ export namespace OBJ {
                     obj.faceMtls.push_back(mtlRange);
                     mtlRange.start = obj.faces.size();
                 }
-                mtlRange.mtlName = trim(line.substr(7));
+                mtlRange.mtlName = trim(trimmed.substr(7));
             }
         }
         if (!firstUseMtl) {

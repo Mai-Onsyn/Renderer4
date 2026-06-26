@@ -108,12 +108,12 @@ export namespace Shader {
      * 法向量已归一化
      * 输入已采样的UV UInt8颜色
      */
-    _m256_Result fragmentShader_avx2(const _m256_Fragment& fragment, const Texture* texture, const Uniform* uniform, const Int32 count) {
+    _m256_Result fragmentShader_avx2(const _m256_Fragment& fragment, const Texture* texture, const Uniform* uniform) {
         _m256_Result result;
         FColor Kd = texture ? FColor(texture->Kd) : FColor(1.0f, 1.0f, 1.0f);
         FColor Ka = texture ? FColor(texture->Ka) : FColor(1.0f, 1.0f, 1.0f);
         FColor Ks = texture ? FColor(texture->Ks) : FColor(1.0f, 1.0f, 1.0f);
-        Float Ns = texture ? texture->Ns : 1.0f;
+        Float Ns = texture ? texture->Ns : 0;
 
         alignas(32) Float stackVx[8];
         alignas(32) Float stackVy[8];

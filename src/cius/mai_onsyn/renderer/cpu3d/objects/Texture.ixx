@@ -17,7 +17,7 @@ public:
     Color Ka{255,255,255};           // 环境光颜色
     Color Kd{128,128,128};           // 漫反射颜色
     Color Ks{255,255,255};           // 镜面反射颜色
-    Float Ns{1};           // 镜面反射指数
+    Float Ns{0};           // 镜面反射指数
     Float d{};            // 透明度
     Image map_Kd;       // 漫反射纹理/主材质
     Image map_Ks;       // 镜面反射纹理
