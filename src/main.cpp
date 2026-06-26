@@ -42,8 +42,10 @@ void makeTestScene(Application<CPU3DRenderer<Scene3D>>* app) {
 
         Light whiteLight{"World Light White", {-30, 60, -30}, {255, 255, 255, 255}};
         scene->addLight(move(whiteLight));
-        // Light sponzaPalaceLight{"Sponza Palace Light", {-40, 15, -25}, {128, 192, 255, 255}};
-        // scene->addLight(move(sponzaPalaceLight));
+        Light sponzaPalaceLight{"Sponza Palace Light", {-56, 2.5, 0}, {255, 255, 255, 255}};
+        sponzaPalaceLight.a = 0.007;
+        sponzaPalaceLight.b = 0.003;
+        scene->addLight(move(sponzaPalaceLight));
     });
     app->addSceneUpdate(task);
     const auto task2 = makeSceneOperation<Scene3D>([](Scene3D* scene) {

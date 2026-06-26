@@ -129,6 +129,7 @@ export namespace Rasterizer {
 
         alignas(32) Float depthStackBuffer[8];
         alignas(32) Int32 uvOffsetStackBuffer[8];
+        alignas(32) UInt8 alphaStackBuffer[8];
 
         // 扫描线填充
         for (Int32 y = ys; y < ye; y++) {
@@ -229,10 +230,12 @@ export namespace Rasterizer {
                         fragment.uvR[i] = r;
                         fragment.uvG[i] = g;
                         fragment.uvB[i] = b;
+                        alphaStackBuffer[i] = a;
                     } else {
                         fragment.uvR[i] = 255;
                         fragment.uvG[i] = 255;
                         fragment.uvB[i] = 255;
+                        alphaStackBuffer[i] = 255;
                     }
                 }
 
@@ -243,13 +246,13 @@ export namespace Rasterizer {
                 // 填充像素
                 for (Int32 i = 0; i < size; i++) {
                     const Float depth = depthStackBuffer[i];
-                    if (const Int32 col = x + i; depth >= depthRow[col]) {
+                    if (const Int32 col = x + i; depth >= depthRow[col] && alphaStackBuffer[i] > 0) {
                         const Int32 pixelIndex = col << 2;
                         depthRow[col] = depth;
                         screenRow[pixelIndex] = r[i];
                         screenRow[pixelIndex + 1] = g[i];
                         screenRow[pixelIndex + 2] = b[i];
-                        screenRow[pixelIndex + 3] = a[i];
+                        screenRow[pixelIndex + 3] = alphaStackBuffer[i];
                     }
                 }
             }

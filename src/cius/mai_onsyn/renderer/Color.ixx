@@ -74,6 +74,8 @@ export struct FColor {
 
     FColor() = default;
 
+    FColor(const Float all): r(all), g(all), b(all), a(255) {}
+
     FColor(const Float r, const Float g, const Float b, const Float a = 1.0f): r(r), g(g), b(b), a(a) {}
 
     explicit operator Color() const {
