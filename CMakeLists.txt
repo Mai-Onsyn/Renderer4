@@ -13,7 +13,7 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(libs/glfw-3.3.8)
 add_subdirectory(libs/glad)
 
-file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.hpp" "libs/stb_truetype.h" "libs/stb_image.h")
+file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.hpp" "libs/stb_truetype.h" "libs/stb_image.h" "libs/json.hpp")
 file(GLOB_RECURSE MODULES "src/*.ixx")
 
 add_executable(${PROJECT_NAME} ${SOURCES})

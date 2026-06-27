@@ -8,6 +8,7 @@ import Light;
 import Color;
 import Vertex;
 import Triangle;
+import Mesh;
 
 export struct RenderPackage3D {
     String name;
@@ -20,6 +21,8 @@ export struct RenderPackage3D {
     // 场景持有生命周期 这里是引用指针
     const Triangle* triangles;
     UInt64 triangleCount;
+
+    List<UniquePtr<Mesh>> ownedMeshes;
 
     String toString() const {
         std::stringstream ss;

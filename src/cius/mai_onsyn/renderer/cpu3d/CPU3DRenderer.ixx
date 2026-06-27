@@ -74,7 +74,7 @@ public:
         Int64 rasterizationStart = microTime();
         const UInt64 timeFactor = millisTime();
         const auto uniform = make_unique<Uniform>(sceneSnapShot->lights);
-        uniform->ambient = {0.4};
+        uniform->ambient = {0.1};
         uniform->cameraPos = sceneSnapShot->cameraPos;
         uniform->cameraDir = sceneSnapShot->cameraDir;
         for (Int32 i = 0; i < tileCount; i++) {

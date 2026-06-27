@@ -5,6 +5,7 @@ module;
 #include <map>
 #include <unordered_map>
 #include <filesystem>
+#include "json.hpp"
 export module OBJ;
 import Types;
 import Color;
@@ -17,13 +18,15 @@ import Texture;
 import Logger;
 import Image;
 
+using JSON = nlohmann::json;
+
 export struct MtlObject {
     String name;
-    Color Ka;           // 环境光颜色
-    Color Kd;           // 漫反射颜色
-    Color Ks;           // 镜面反射颜色
-    Float Ns;           // 镜面反射指数
-    Float d;            // 透明度
+    Color Ka{64, 64, 64};           // 环境光颜色
+    Color Kd{200, 200, 200};           // 漫反射颜色
+    Color Ks{0, 0, 0};           // 镜面反射颜色
+    Float Ns{1};           // 镜面反射指数
+    Float d{1};            // 透明度
     // Color Tf;           // 滤光透射率
     // String map_Ka;      // 环境光纹理
     String map_Kd;      // 漫反射纹理
@@ -140,6 +143,14 @@ export namespace OBJ {
 
     OBJFile load(const String& path) {
         std::filesystem::path objFileDir = std::filesystem::path(path).parent_path();
+        std::filesystem::path configFile = objFileDir / "properties.json";
+
+        Boolean flipUV_Y = false;
+        if (std::filesystem::exists(configFile)) {
+            JSON json = JSON::parse(std::ifstream(configFile));
+            if (json.contains("flipUV_Y") && json["flipUV_Y"].is_boolean())
+                flipUV_Y = json["flipUV_Y"].get<Boolean>();
+        }
 
         OBJFile obj;
         std::ifstream fis(path);
@@ -162,7 +173,8 @@ export namespace OBJ {
                 obj.vertices.emplace_back(stof(tokens[1]), stof(tokens[2]), stof(tokens[3]));
             }
             else if (lineType == "vt" && tokens.size() >= 3) {
-                obj.uvs.emplace_back(stof(tokens[1]), stof(tokens[2]));
+                Float v = stof(tokens[2]);
+                obj.uvs.emplace_back(stof(tokens[1]), flipUV_Y ? 1.0f - v : v);
             }
             else if (lineType == "vn" && tokens.size() >= 4) {
                 obj.normals.emplace_back(stof(tokens[1]), stof(tokens[2]), stof(tokens[3]));

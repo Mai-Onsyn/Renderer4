@@ -142,6 +142,49 @@ public:
         return matrix;
     }
 
+    static Matrix4x4 rotate(const Float angle, const Vector3D& axis) {
+        // Float len = axis.length();
+        // if (len < 1e-8) {
+        //     return I(); // 零轴返回单位矩阵
+        // }
+        // Float x = axis.x / len;
+        // Float y = axis.y / len;
+        // Float z = axis.z / len;
+
+        Vector3D v = axis.normalize();
+
+        Float c = cos(angle);
+        Float s = sin(angle);
+        Float t = 1 - c; // (1 - cos)
+
+        Matrix4x4 matrix = I(); // 初始为单位矩阵
+
+        // 列主序填充 3x3 旋转部分
+        // 第 0 列 (索引 0,1,2)
+        matrix[0] = t * v.x * v.x + c;
+        matrix[1] = t * v.x * v.y + s * v.z;
+        matrix[2] = t * v.x * v.z - s * v.y;
+
+        // 第 1 列 (索引 4,5,6)
+        matrix[4] = t * v.x * v.y - s * v.z;
+        matrix[5] = t * v.y * v.y + c;
+        matrix[6] = t * v.y * v.z + s * v.x;
+
+        // 第 2 列 (索引 8,9,10)
+        matrix[8] = t * v.x * v.z + s * v.y;
+        matrix[9] = t * v.y * v.z - s * v.x;
+        matrix[10] = t * v.z * v.z + c;
+
+        // 第 3 列 (平移部分，保持 0,0,0,1)
+        matrix[3] = 0;
+        matrix[7] = 0;
+        matrix[11] = 0;
+        // matrix[12], matrix[13], matrix[14] 已由 I() 设为 0
+        // matrix[15] 已由 I() 设为 1
+
+        return matrix;
+    }
+
     explicit operator Matrix3x3() const {
         return {m[0], m[1], m[2], m[4], m[5], m[6], m[8], m[9], m[10]};
     }

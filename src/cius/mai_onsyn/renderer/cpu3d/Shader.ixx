@@ -113,7 +113,7 @@ export namespace Shader {
         FColor Kd = texture ? FColor(texture->Kd) : FColor(1.0f, 1.0f, 1.0f);
         FColor Ka = texture ? FColor(texture->Ka) : FColor(1.0f, 1.0f, 1.0f);
         FColor Ks = texture ? FColor(texture->Ks) : FColor(1.0f, 1.0f, 1.0f);
-        Float Ns = texture ? texture->Ns : 0;
+        Float Ns = texture ? texture->Ns : 1;
 
         alignas(32) Float stackVx[8];
         alignas(32) Float stackVy[8];

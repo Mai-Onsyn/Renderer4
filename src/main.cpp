@@ -18,6 +18,7 @@ import Scene;
 import Texture;
 import Matrix;
 import OBJ;
+import SponzaPalaceScene;
 
 void makeTestScene(Application<CPU3DRenderer<Scene3D>>* app) {
     const auto task = makeSceneOperation<Scene3D>([](Scene3D* scene) {
@@ -72,8 +73,8 @@ void makeTestScene(Application<CPU3DRenderer<Scene3D>>* app) {
 
 int main() {
     system("chcp 65001");
-    Application<CPU3DRenderer<Scene3D>> app("DisplayWindow", 1440, 900);
-    makeTestScene(&app);
+    Application<CPU3DRenderer<SponzaPalaceScene>> app("DisplayWindow", 1440, 900);
+    // makeTestScene(&app);
     app.run();
 
     return 0;

@@ -1,0 +1,397 @@
+# MTL file - created by a modified js OBJExporter
+
+newmtl material61
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material61.png
+map_Pm metalnessMap1.png
+map_Pr metalnessMap1.png
+norm normalMap1.png
+
+newmtl material57
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material57.png
+map_Pm metalnessMap2.png
+map_Pr metalnessMap2.png
+norm normalMap2.png
+
+newmtl material59
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material59.png
+map_Pm metalnessMap3.png
+map_Pr metalnessMap3.png
+norm normalMap3.png
+
+newmtl material58
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material58.png
+map_Pm metalnessMap4.png
+map_Pr metalnessMap4.png
+norm normalMap4.png
+
+newmtl material60
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material60.png
+map_Pm metalnessMap5.png
+map_Pr metalnessMap5.png
+norm normalMap5.png
+
+newmtl material62
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material62.png
+map_Pm metalnessMap6.png
+map_Pr metalnessMap6.png
+norm normalMap6.png
+
+newmtl material64
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material64.png
+map_Pm metalnessMap7.png
+map_Pr metalnessMap7.png
+norm normalMap7.png
+
+newmtl material63
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material63.png
+map_Pm metalnessMap8.png
+map_Pr metalnessMap8.png
+norm normalMap8.png
+
+newmtl material66
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material66.png
+map_Pm metalnessMap9.png
+map_Pr metalnessMap9.png
+norm normalMap9.png
+
+newmtl material65
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material65.png
+map_Pm metalnessMap10.png
+map_Pr metalnessMap10.png
+norm normalMap10.png
+
+newmtl material67
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material67.png
+map_Pm metalnessMap11.png
+map_Pr metalnessMap11.png
+norm normalMap11.png
+
+newmtl material68
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material68.png
+map_Pm metalnessMap12.png
+map_Pr metalnessMap12.png
+norm normalMap12.png
+
+newmtl material56
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material56.png
+
+newmtl material76
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material76.png
+map_Pm metalnessMap14.png
+map_Pr metalnessMap14.png
+norm normalMap14.png
+
+newmtl material79
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material79.png
+map_Pm metalnessMap15.png
+map_Pr metalnessMap15.png
+norm normalMap15.png
+
+newmtl material71
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material71.png
+map_Pm metalnessMap15.png
+map_Pr metalnessMap15.png
+norm normalMap16.png
+
+newmtl material74
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material74.png
+map_Pm metalnessMap15.png
+map_Pr metalnessMap15.png
+norm normalMap17.png
+
+newmtl material78
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material78.png
+map_Pm metalnessMap18.png
+map_Pr metalnessMap18.png
+norm normalMap18.png
+
+newmtl material72
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material72.png
+map_Pm metalnessMap18.png
+map_Pr metalnessMap18.png
+norm normalMap19.png
+
+newmtl material73
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material73.png
+map_Pm metalnessMap18.png
+map_Pr metalnessMap18.png
+norm normalMap20.png
+
+newmtl material75
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material75.png
+map_Pm metalnessMap21.png
+map_Pr metalnessMap21.png
+norm normalMap21.png
+
+newmtl material77
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material77.png
+map_Pm metalnessMap22.png
+map_Pr metalnessMap22.png
+norm normalMap22.png
+
+newmtl material70
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material70.png
+map_Pm metalnessMap23.png
+map_Pr metalnessMap23.png
+norm normalMap23.png
+
+newmtl material69
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material69.png
+map_Pm metalnessMap24.png
+map_Pr metalnessMap24.png
+norm normalMap24.png
+
+newmtl material80
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.5879999995231628 0.5879999995231628 0.5879999995231628
+Ke 0 0 0
+map_Kd material80.png
+map_Pm metalnessMap25.png
+map_Pr metalnessMap25.png
+norm normalMap25.png

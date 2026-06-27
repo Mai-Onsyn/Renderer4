@@ -14,8 +14,9 @@ import Matrix;
 import FramebufferWindow;
 import InputManager;
 import Scene;
+import MeshCreator;
 
-export class Scene3D final : public Scene<Scene3DSnapShot> {
+export class Scene3D : public Scene<Scene3DSnapShot> {
     List<Entity> entities{};
     List<Light> lights{};
     Camera camera{};
@@ -66,6 +67,21 @@ public:
         snapShot->screenHeight = screenHeight;
         snapShot->near = camera.near;
 
+        for (const auto& light : lights) {
+            RenderPackage3D pkg;
+            pkg.name = light.name;
+            auto mesh = make_unique<Mesh>(MeshCreator::createBox(1, light.pos, {1, 1, 1}));
+            pkg.modelMatrix = Matrix4x4::I();
+
+            pkg.vertexCount = mesh.get()->vertices.size();
+            pkg.triangleCount = mesh.get()->triangles.size();
+
+            pkg.vertices = mesh.get()->vertices.data();
+            pkg.triangles = mesh.get()->triangles.data();
+            pkg.ownedMeshes.push_back(move(mesh));
+
+            snapShot->renderPackages.emplace_back(move(pkg));
+        }
         for (const auto& entity : entities) {
             RenderPackage3D pkg;
             pkg.name = entity.name;

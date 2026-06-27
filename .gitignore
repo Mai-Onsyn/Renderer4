@@ -3,5 +3,5 @@ cmake-build-*/
 assets/meshes/mika/
 assets/meshes/aris/
 assets/meshes/img_tool.py
-assets/meshes/Sponza Palace/
+#assets/meshes/Sponza Palace/
 assets/meshes/the-utah-teapot/
