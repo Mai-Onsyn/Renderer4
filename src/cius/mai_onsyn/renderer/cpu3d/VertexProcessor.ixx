@@ -17,6 +17,7 @@ import Time;
 import RenderPackage3D;
 import Thread;
 import ThreadPool;
+import SIMD;
 
 struct ClipVertex {
     Vector4D pos;
@@ -275,6 +276,78 @@ export namespace VertexProcessor {
         Matrix4x4 m;
         Matrix4x4 vp;
         Matrix3x3 nMatrix;
+
+        void run1() {
+            Int32 i = range.start;
+            const auto vs = sceneSnapShot->renderPackages[range.pkgIndex].vertices;
+            alignas(32) Float buffer1[8];
+            alignas(32) Float buffer2[8];
+            alignas(32) Float buffer3[8];
+            alignas(32) Float buffer4[8];
+            alignas(32) Float buffer5[8];
+            alignas(32) Float buffer6[8];
+            alignas(32) Float buffer7[8];
+            alignas(32) Float buffer8[8];
+            alignas(32) Float buffer9[8];
+            alignas(32) Float buffer10[8];
+            for (; i + 8 < range.end; i += 8) {
+                // Vec8f vx(vs[i].pos.x, vs[i + 1].pos.x, vs[i + 2].pos.x, vs[i + 3].pos.x, vs[i + 4].pos.x, vs[i + 5].pos.x, vs[i + 6].pos.x, vs[i + 7].pos.x);
+                // Vec8f vy(vs[i].pos.y, vs[i + 1].pos.y, vs[i + 2].pos.y, vs[i + 3].pos.y, vs[i + 4].pos.y, vs[i + 5].pos.y, vs[i + 6].pos.y, vs[i + 7].pos.y);
+                // Vec8f vz(vs[i].pos.z, vs[i + 1].pos.z, vs[i + 2].pos.z, vs[i + 3].pos.z, vs[i + 4].pos.z, vs[i + 5].pos.z, vs[i + 6].pos.z, vs[i + 7].pos.z);
+                // Vec8f vw(1.0f);
+
+                Vec8f v1 = _mm256_loadu_ps(reinterpret_cast<const float*>(&vs[i + 0]));
+                Vec8f v2 = _mm256_loadu_ps(reinterpret_cast<const float*>(&vs[i + 1]));
+                Vec8f v3 = _mm256_loadu_ps(reinterpret_cast<const float*>(&vs[i + 2]));
+                Vec8f v4 = _mm256_loadu_ps(reinterpret_cast<const float*>(&vs[i + 3]));
+                Vec8f v5 = _mm256_loadu_ps(reinterpret_cast<const float*>(&vs[i + 4]));
+                Vec8f v6 = _mm256_loadu_ps(reinterpret_cast<const float*>(&vs[i + 5]));
+                Vec8f v7 = _mm256_loadu_ps(reinterpret_cast<const float*>(&vs[i + 6]));
+                Vec8f v8 = _mm256_loadu_ps(reinterpret_cast<const float*>(&vs[i + 7]));
+                transpose8_ps(v1, v2, v3, v4, v5, v6, v7, v8);
+
+                Vec8f w = 1;
+                Vec8f::matrixMul(m, v1, v2, v3, w);
+
+                // world pos
+                v1.store(buffer1);
+                v2.store(buffer2);
+                v3.store(buffer3);
+
+                Vec8f::matrixMul(vp, v1, v2, v3, w);
+
+                // clip pos
+                v1.store(buffer4);
+                v2.store(buffer5);
+                v3.store(buffer6);
+                w.store(buffer7);
+
+                // vx = {vs[i].normal.x, vs[i + 1].normal.x, vs[i + 2].normal.x, vs[i + 3].normal.x, vs[i + 4].normal.x, vs[i + 5].normal.x, vs[i + 6].normal.x, vs[i + 7].normal.x};
+                // vy = {vs[i].normal.y, vs[i + 1].normal.y, vs[i + 2].normal.y, vs[i + 3].normal.y, vs[i + 4].normal.y, vs[i + 5].normal.y, vs[i + 6].normal.y, vs[i + 7].normal.y};
+                // vz = {vs[i].normal.z, vs[i + 1].normal.z, vs[i + 2].normal.z, vs[i + 3].normal.z, vs[i + 4].normal.z, vs[i + 5].normal.z, vs[i + 6].normal.z, vs[i + 7].normal.z};
+
+                Vec8f::matrixMul(nMatrix, v4, v5, v6);
+                v4.store(buffer8);
+                v5.store(buffer9);
+                v6.store(buffer10);
+
+                for (UInt8 j = 0; j < 8; j++) {
+                    resultArray[i + j].worldPos = {buffer1[j], buffer2[j], buffer3[j]};
+                    resultArray[i + j].pos = {buffer4[j], buffer5[j], buffer6[j], buffer7[j]};
+                    resultArray[i + j].normal = {buffer8[j], buffer9[j], buffer10[j]};
+                    resultArray[i + j].uv = {vs[i + j].uv.x, vs[i + j].uv.y};
+                }
+            }
+
+            for (; i < range.end; i++) {
+                const auto&[pos, normal, uv] = sceneSnapShot->renderPackages[range.pkgIndex].vertices[i];
+                Vector4D wordPos = m * pos;
+                resultArray[i].worldPos = static_cast<Vector3D>(wordPos);
+                resultArray[i].pos = vp * wordPos;
+                resultArray[i].normal = nMatrix * normal;
+                resultArray[i].uv = uv;
+            }
+        }
 
         void run() override {
             for (UInt32 i = range.start; i < range.end; i++) {

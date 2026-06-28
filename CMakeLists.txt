@@ -29,7 +29,7 @@ target_sources(${PROJECT_NAME} PUBLIC
 )
 
 if (MSVC)
-    add_compile_options(/arch:AVX2)
+    add_compile_options(/arch:AVX2 /fp:fast)
     #    add_compile_options(/fsanitize=address /Zi)
     #    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     target_compile_options(${PROJECT_NAME} PRIVATE /utf-8)

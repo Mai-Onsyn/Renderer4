@@ -70,7 +70,7 @@ public:
         for (const auto& light : lights) {
             RenderPackage3D pkg;
             pkg.name = light.name;
-            auto mesh = make_unique<Mesh>(MeshCreator::createBox(1, light.pos, {1, 1, 1}));
+            auto mesh = make_unique<Mesh>(MeshCreator::createBox(0.1, light.pos, {255, 255, 255}));
             pkg.modelMatrix = Matrix4x4::I();
 
             pkg.vertexCount = mesh.get()->vertices.size();

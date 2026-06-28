@@ -110,9 +110,9 @@ export namespace Shader {
      */
     _m256_Result fragmentShader_avx2(const _m256_Fragment& fragment, const Texture* texture, const Uniform* uniform) {
         _m256_Result result;
-        FColor Kd = texture ? FColor(texture->Kd) : FColor(1.0f, 1.0f, 1.0f);
-        FColor Ka = texture ? FColor(texture->Ka) : FColor(1.0f, 1.0f, 1.0f);
-        FColor Ks = texture ? FColor(texture->Ks) : FColor(1.0f, 1.0f, 1.0f);
+        FColor Kd = texture ? FColor(texture->Kd) : FColor(0.8f, 0.8f, 0.8f);
+        FColor Ka = texture ? FColor(texture->Ka) : FColor(0.8f, 0.8f, 0.8f);
+        FColor Ks = texture ? FColor(texture->Ks) : FColor(0.5f, 0.5f, 0.5f);
         Float Ns = texture ? texture->Ns : 1;
 
         alignas(32) Float stackVx[8];
@@ -159,7 +159,8 @@ export namespace Shader {
         Vec8f vx_nn = Vec8f(uniform->cameraPos.x) - Vec8f(fragment.pX);
         Vec8f vy_nn = Vec8f(uniform->cameraPos.y) - Vec8f(fragment.pY);
         Vec8f vz_nn = Vec8f(uniform->cameraPos.z) - Vec8f(fragment.pZ);
-        Vec8f vLenInv = Vec8f(1.0f) / (vx_nn * vx_nn + vy_nn * vy_nn + vz_nn * vz_nn).sqrt();
+        Vec8f vLenInv = Vec8f::fma(vx_nn, vx_nn, Vec8f::fma(vy_nn, vy_nn, vz_nn * vz_nn)).invSqrt();
+        // Vec8f vLenInv = Vec8f(1.0f) / (vx_nn * vx_nn + vy_nn * vy_nn + vz_nn * vz_nn).sqrt();
         (vx_nn * vLenInv).store(stackVx);
         (vy_nn * vLenInv).store(stackVy);
         (vz_nn * vLenInv).store(stackVz);
@@ -168,7 +169,8 @@ export namespace Shader {
             Vec8f L_dir_x = Vec8f(light.pos.x) - Vec8f(fragment.pX);
             Vec8f L_dir_y = Vec8f(light.pos.y) - Vec8f(fragment.pY);
             Vec8f L_dir_z = Vec8f(light.pos.z) - Vec8f(fragment.pZ);
-            Vec8f distance = (L_dir_x * L_dir_x + L_dir_y * L_dir_y + L_dir_z * L_dir_z).sqrt();
+            Vec8f distance = Vec8f::fma(L_dir_x, L_dir_x, Vec8f::fma(L_dir_y, L_dir_y, L_dir_z * L_dir_z)).sqrt();
+            // Vec8f distance = (L_dir_x * L_dir_x + L_dir_y * L_dir_y + L_dir_z * L_dir_z).sqrt();
             if (distance > light.range) continue;
 
             Vec8f invDistance = Vec8f(1) / distance;
@@ -176,7 +178,8 @@ export namespace Shader {
             Vec8f L_y = L_dir_y * invDistance;
             Vec8f L_z = L_dir_z * invDistance;
 
-            Vec8f attn_dist = Vec8f(1) / (Vec8f(1) + distance * light.a + distance * distance * light.b);
+            Vec8f attn_dist = Vec8f::fma(distance, light.a, distance * distance * light.b + 1).inv();
+            // Vec8f attn_dist = Vec8f(1) / (Vec8f(1) + distance * light.a + distance * distance * light.b);
             Vec8f attn_dir = Vec8f(1);
             if (light.type == LightType::Face) {
                 Vec8f zero(0.0f);
@@ -188,7 +191,10 @@ export namespace Shader {
             Vec8f I_light_g = light_decay * light.color.g;
             Vec8f I_light_b = light_decay * light.color.b;
 
-            Vec8f sqrtHalfLambert = Vec8f::dot3D(L_x, L_y, L_z, fragment.nX, fragment.nY, fragment.nZ) * Vec8f(0.5f) + Vec8f(0.5f);
+            Vec8f nDotL = Vec8f::dot3D(L_x, L_y, L_z, fragment.nX, fragment.nY, fragment.nZ);
+            if (nDotL < 0.0f) continue;
+
+            Vec8f sqrtHalfLambert = nDotL * Vec8f(0.5f) + Vec8f(0.5f);
             Vec8f Diffuse_r = I_light_r * sqrtHalfLambert * sqrtHalfLambert;
             Vec8f Diffuse_g = I_light_g * sqrtHalfLambert * sqrtHalfLambert;
             Vec8f Diffuse_b = I_light_b * sqrtHalfLambert * sqrtHalfLambert;
@@ -196,7 +202,8 @@ export namespace Shader {
             Vec8f H_x_nn = L_x + stackVx;
             Vec8f H_y_nn = L_y + stackVy;
             Vec8f H_z_nn = L_z + stackVz;
-            Vec8f hLenInv = Vec8f(1) / (H_x_nn * H_x_nn + H_y_nn * H_y_nn + H_z_nn * H_z_nn).sqrt();
+            Vec8f hLenInv = Vec8f::fma(H_x_nn, H_x_nn, Vec8f::fma(H_y_nn, H_y_nn, H_z_nn * H_z_nn)).invSqrt();
+            // Vec8f hLenInv = Vec8f(1) / (H_x_nn * H_x_nn + H_y_nn * H_y_nn + H_z_nn * H_z_nn).sqrt();
             Vec8f H_x = H_x_nn * hLenInv;
             Vec8f H_y = H_y_nn * hLenInv;
             Vec8f H_z = H_z_nn * hLenInv;
@@ -210,9 +217,12 @@ export namespace Shader {
             Vec8f Specular_g = I_light_g * pow_max_0_N_dot_H;
             Vec8f Specular_b = I_light_b * pow_max_0_N_dot_H;
 
-            (Vec8f(stackC_diff_r) * Diffuse_r + Specular_r * Ks.r + Vec8f(stackSum_r)).store(stackSum_r);
-            (Vec8f(stackC_diff_g) * Diffuse_g + Specular_g * Ks.g + Vec8f(stackSum_g)).store(stackSum_g);
-            (Vec8f(stackC_diff_b) * Diffuse_b + Specular_b * Ks.b + Vec8f(stackSum_b)).store(stackSum_b);
+            Vec8f::fma(stackC_diff_r, Diffuse_r, Vec8f::fma(Specular_r, Ks.r, stackSum_r)).store(stackSum_r);
+            Vec8f::fma(stackC_diff_g, Diffuse_g, Vec8f::fma(Specular_g, Ks.g, stackSum_g)).store(stackSum_g);
+            Vec8f::fma(stackC_diff_b, Diffuse_b, Vec8f::fma(Specular_b, Ks.b, stackSum_b)).store(stackSum_b);
+            // (Vec8f(stackC_diff_r) * Diffuse_r + Specular_r * Ks.r + Vec8f(stackSum_r)).store(stackSum_r);
+            // (Vec8f(stackC_diff_g) * Diffuse_g + Specular_g * Ks.g + Vec8f(stackSum_g)).store(stackSum_g);
+            // (Vec8f(stackC_diff_b) * Diffuse_b + Specular_b * Ks.b + Vec8f(stackSum_b)).store(stackSum_b);
         }
 
         storeColorVec(static_cast<Vec8i>(Vec8f(stackSum_r).clamp(0, 1) * 255.0f), result.r);
