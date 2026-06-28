@@ -28,6 +28,7 @@ import Light;
 import Camera;
 
 constexpr Int32 SHADOW_RESOLUTION = 512;
+constexpr Boolean SHADOW_MAP = true;
 
 template<typename T>
 concept SceneType = std::derived_from<T, Scene3D>;
@@ -88,31 +89,33 @@ public:
         frameBuffer->clearScreen({135, 206, 250, 255});
 
         // 阴影贴图
-        const String& lightName = sceneSnapShot->lights[0].name;
-        Camera lightCamera{};
-        lightCamera.vz = {0.59577, -0.42050, 0.68427};
-        // lightCamera.vz = {-0.30548,-0.81225, 0.49692};
-        lightCamera.vx = lightCamera.up.cross(lightCamera.vz).normalize();
-        lightCamera.vy = lightCamera.vz.cross(lightCamera.vx).normalize();
-        lightCamera.pos = sceneSnapShot->lights[0].pos;
-        lightCamera.fov = 90;
-        shadowMaps[lightName].vpMatrix = lightCamera.getProjectionMatrix(1) * lightCamera.getViewTransformMatrix();
-        auto shadowTriangles = ShadowVertexProcessor::process(sceneSnapShot, lightCamera, executor, SHADOW_RESOLUTION, 20 * threadCount);
-        ShadowTriangleProcessor::binning(shadowTiles.get(), shadowTriangles, shadowTileCount, tileSize, SHADOW_RESOLUTION, SHADOW_RESOLUTION);
-        for (Int32 i = 0; i < shadowTileCount; ++i) {
-            auto* task = new ShadowTileTask(shadowTiles[i]);
+        if constexpr (SHADOW_MAP) {
+            const String& lightName = sceneSnapShot->lights[0].name;
+            Camera lightCamera{};
+            // lightCamera.vz = {0.59577, -0.42050, 0.68427};
+            lightCamera.vz = {-0.26960,-0.76174,0.58912};
+            lightCamera.vx = lightCamera.up.cross(lightCamera.vz).normalize();
+            lightCamera.vy = lightCamera.vz.cross(lightCamera.vx).normalize();
+            lightCamera.pos = sceneSnapShot->lights[0].pos;
+            lightCamera.fov = 90;
+            shadowMaps[lightName].vpMatrix = lightCamera.getProjectionMatrix(1) * lightCamera.getViewTransformMatrix();
+            auto shadowTriangles = ShadowVertexProcessor::process(sceneSnapShot, lightCamera, executor, SHADOW_RESOLUTION, 20 * threadCount);
+            ShadowTriangleProcessor::binning(shadowTiles.get(), shadowTriangles, shadowTileCount, tileSize, SHADOW_RESOLUTION, SHADOW_RESOLUTION);
+            for (Int32 i = 0; i < shadowTileCount; ++i) {
+                auto* task = new ShadowTileTask(shadowTiles[i]);
 
-            Int32 mapSize = SHADOW_RESOLUTION * SHADOW_RESOLUTION;
-            if (!shadowMaps.contains(lightName) || shadowMaps[lightName].size < SHADOW_RESOLUTION) {
-                shadowMaps[lightName].map = make_unique<Float[]>(mapSize + 8);
-                shadowMaps[lightName].size = SHADOW_RESOLUTION;
+                Int32 mapSize = SHADOW_RESOLUTION * SHADOW_RESOLUTION;
+                if (!shadowMaps.contains(lightName) || shadowMaps[lightName].size < SHADOW_RESOLUTION) {
+                    shadowMaps[lightName].map = make_unique<Float[]>(mapSize + 8);
+                    shadowMaps[lightName].size = SHADOW_RESOLUTION;
+                }
+
+                task->setDrawBuffer(shadowMaps[lightName].map.get());
+                task->setResolution(SHADOW_RESOLUTION);
+                shadowTasks[i] = UniquePtr<Runnable>(task);
             }
-
-            task->setDrawBuffer(shadowMaps[lightName].map.get());
-            task->setResolution(SHADOW_RESOLUTION);
-            shadowTasks[i] = UniquePtr<Runnable>(task);
+            executor.submit(shadowTasks.get(), shadowTileCount);
         }
-        executor.submit(shadowTasks.get(), shadowTileCount);
 
         // 顶点变换
         Int64 vertexTransformStart = microTime();
@@ -126,7 +129,7 @@ public:
         Int64 rasterizationStart = microTime();
         const UInt64 timeFactor = millisTime();
         const auto uniform = make_unique<Uniform>(sceneSnapShot->lights);
-        uniform->ambient = {0.1};
+        uniform->ambient = {0.3};
         uniform->cameraPos = sceneSnapShot->cameraPos;
         uniform->cameraDir = sceneSnapShot->cameraDir;
         for (Int32 i = 0; i < tileCount; i++) {
@@ -148,7 +151,7 @@ public:
             //     Int32 row = y * width;
             //     for (Int32 x = 0; x < SHADOW_RESOLUTION; x++) {
             //         Int32 index = (row + x) << 2;
-            //         UInt8 gray = static_cast<UInt8>(sqrt(shadow[idx++]) * 255);
+            //         UInt8 gray = static_cast<UInt8>(shadow[idx++]);
             //         buffer[index + 0] = gray;
             //         buffer[index + 1] = gray;
             //         buffer[index + 2] = gray;

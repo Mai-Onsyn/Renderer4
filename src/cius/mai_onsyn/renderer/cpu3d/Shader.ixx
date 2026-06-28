@@ -234,11 +234,12 @@ export namespace Shader {
                 Vec8f w = 1.0f;
                 Vec8f::matrixMul(matrix, sx, sy, sz, w);
                 // 裁剪空间
+                Vec8f currentFragmentDepth = w;
                 w = w.inv();
                 sx *= w;
                 sy *= w;
-                sz *= w;
-                sz = Vec8f(1) - sz; // 深度
+                // sz *= w;
+                // sz = Vec8f(1) - sz; // 深度
                 // ndc空间
                 sx = (sx * 0.5f + 0.5f).clamp(0, 1);  // [0, 1]的shadow map uv
                 sy = Vec8f(1) - (sy * 0.5f + 0.5f).clamp(0, 1);  // [0, 1]的shadow map uv
@@ -252,13 +253,14 @@ export namespace Shader {
                     stackMapDepths[i] = map.get()[shadowOffset];
                 }
                 // Float bias = max(0.0005 * (1.0 - dot(normal, lightDir)), 0.00005);
-                Vec8f shadowDistances = Vec8f(stackMapDepths) * Vec8f(0.9f);
-                Vec8f cmp = shadowDistances.cmpBigger(sz);
-                Vec8f shadowMask = _mm256_blendv_ps(Vec8f(1), Vec8f(0.2), cmp);
+                Vec8f bias = (Vec8f(1) - nDotL) * 0.5;
+                Vec8f shadowDistances = Vec8f(stackMapDepths) + bias;
+                Vec8f cmp = shadowDistances.cmpBigger(currentFragmentDepth);
+                Vec8f shadowMask = _mm256_blendv_ps(Vec8f(0.2), Vec8f(1), cmp);
 
-                (Vec8f::fma(stackC_diff_r, Diffuse_r, Vec8f::fma(Specular_r, Ks.r, stackSum_r)) * shadowMask).store(stackSum_r);
-                (Vec8f::fma(stackC_diff_g, Diffuse_g, Vec8f::fma(Specular_g, Ks.g, stackSum_g)) * shadowMask).store(stackSum_g);
-                (Vec8f::fma(stackC_diff_b, Diffuse_b, Vec8f::fma(Specular_b, Ks.b, stackSum_b)) * shadowMask).store(stackSum_b);
+                Vec8f::fma(Vec8f::fma(stackC_diff_r, Diffuse_r, Specular_r * Ks.r), shadowMask, stackSum_r).store(stackSum_r);
+                Vec8f::fma(Vec8f::fma(stackC_diff_g, Diffuse_g, Specular_g * Ks.g), shadowMask, stackSum_g).store(stackSum_g);
+                Vec8f::fma(Vec8f::fma(stackC_diff_b, Diffuse_b, Specular_b * Ks.b), shadowMask, stackSum_b).store(stackSum_b);
             } else {
                 Vec8f::fma(stackC_diff_r, Diffuse_r, Vec8f::fma(Specular_r, Ks.r, stackSum_r)).store(stackSum_r);
                 Vec8f::fma(stackC_diff_g, Diffuse_g, Vec8f::fma(Specular_g, Ks.g, stackSum_g)).store(stackSum_g);

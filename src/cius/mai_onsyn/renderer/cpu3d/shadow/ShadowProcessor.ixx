@@ -197,9 +197,9 @@ export namespace ShadowVertexProcessor {
             {static_cast<Int64>(resVpX[0]), static_cast<Int64>(resVpY[0])},
             {static_cast<Int64>(resVpX[1]), static_cast<Int64>(resVpY[1])},
             {static_cast<Int64>(resVpX[2]), static_cast<Int64>(resVpY[2])},
-            1 - resNdcZ[0],
-            1 - resNdcZ[1],
-            1 - resNdcZ[2]
+            v1.pos.w,
+            v2.pos.w,
+            v3.pos.w
         });
     }
 
@@ -265,9 +265,9 @@ export namespace ShadowVertexProcessor {
                     {static_cast<Int64>(v1vp.x), static_cast<Int64>(v1vp.y)},
                     {static_cast<Int64>(v2vp.x), static_cast<Int64>(v2vp.y)},
                     {static_cast<Int64>(v3vp.x), static_cast<Int64>(v3vp.y)},
-                    1 - v1ndc.z,
-                    1 - v2ndc.z,
-                    1 - v3ndc.z
+                    clipV1.pos.w,
+                    clipV2.pos.w,
+                    clipV3.pos.w
                 });
             }
         }
@@ -539,7 +539,7 @@ export class ShadowTileTask final : public Runnable {
     Int32 resolution;
 
     void clearMap() const {
-        const __m256i depthVec = _mm256_set1_epi32(0);
+        const __m256i depthVec = _mm256_set1_epi32(0x42424242);
         auto* depths = reinterpret_cast<Float*>(shadowMap);
 
         // 计算安全的裁剪边界
@@ -556,7 +556,7 @@ export class ShadowTileTask final : public Runnable {
                 _mm256_storeu_si256(reinterpret_cast<__m256i*>(&depths[rowOffset + x]), depthVec);
             }
             for (; x < maxX; x++) {
-                depths[rowOffset + x] = 0.0f;
+                depths[rowOffset + x] = 1e30f;
             }
         }
     }
@@ -663,7 +663,7 @@ public:
 
                 // 批量深度剔除
                 __m256 rowDepth = _mm256_loadu_ps(&shadowRow[x]);
-                __m256 cmp = _mm256_cmp_ps(depth8f, rowDepth, _CMP_GT_OQ);
+                __m256 cmp = _mm256_cmp_ps(depth8f, rowDepth, _CMP_NGT_UQ);
                 Int32 mask = _mm256_movemask_ps(cmp);
                 if ((((1 << size) - 1) & mask) == 0) continue;
                 depth8f.store(depthStackBuffer);
@@ -671,7 +671,7 @@ public:
                 // 填充像素
                 for (Int32 i = 0; i < size; i++) {
                     const Float depth = depthStackBuffer[i];
-                        if (const Int32 col = x + i;  depth >= shadowRow[col]) {
+                        if (const Int32 col = x + i;  depth < shadowRow[col]) {
                         shadowRow[col] = depth;
                     }
                 }
