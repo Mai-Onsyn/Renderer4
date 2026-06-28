@@ -14,6 +14,7 @@ import FrameBuffer;
 import Shader;
 import SIMD;
 import Color;
+import ShadowProcessor;
 
 export namespace Rasterizer {
     void drawTriangle(const ScreenTriangle& triangle, const Tile* tile, const FrameBuffer* screenBuffer, Float* depthBuffer, const Uniform* uniform) {
@@ -94,7 +95,7 @@ export namespace Rasterizer {
         }
     }
 
-    void drawTriangleAvx2(const ScreenTriangle& triangle, const Tile* tile, const FrameBuffer* screenBuffer, Float* depthBuffer, const Uniform* uniform) {
+    void drawTriangleAvx2(const ScreenTriangle& triangle, const Tile* tile, const FrameBuffer* screenBuffer, Float* depthBuffer, const Uniform* uniform, ShadowCollection* shadows) {
         // 复制顶点
         ScreenVertex v1 = triangle.v1;
         ScreenVertex v2 = triangle.v2;
@@ -244,7 +245,7 @@ export namespace Rasterizer {
                 }
 
                 // 并行光照计算
-                auto [r, g, b, a] = Shader::fragmentShader_avx2(fragment, triangle.texture, uniform);
+                auto [r, g, b, a] = Shader::fragmentShader_avx2(fragment, triangle.texture, uniform, shadows, size);
                 // auto [r, g, b, a] = Shader::fragmentShader_avx2_NoLight(fragment);
 
                 // 填充像素

@@ -12,12 +12,15 @@ import Vectors;
 import Rasterizer;
 import Triangle;
 import Color;
+import SIMD;
+import ShadowProcessor;
 
 export class TileTask final : public Runnable {
     Tile* tile;
     FrameBuffer* screenBuffer = nullptr;
     Float* depthBuffer = nullptr;
     Uniform* uniform;
+    ShadowCollection* shadowMaps;
 
     UInt64 timeFactor = 0.0f;
 
@@ -65,6 +68,10 @@ public:
         this->depthBuffer = depthBuffer;
     }
 
+    void setShadowMaps(ShadowCollection* shadowMaps) {
+        this->shadowMaps = shadowMaps;
+    }
+
     void setUniform(Uniform* uniform) {
         this->uniform = uniform;
     }
@@ -74,7 +81,7 @@ public:
 
         if (const UInt32 size = tile->triangles.size(); size > 0) {
             for (UInt32 i = 0; i < size; i++) {
-                Rasterizer::drawTriangleAvx2(*tile->triangles[i], tile, screenBuffer, depthBuffer, uniform);
+                Rasterizer::drawTriangleAvx2(*tile->triangles[i], tile, screenBuffer, depthBuffer, uniform, shadowMaps);
             }
         }
     }

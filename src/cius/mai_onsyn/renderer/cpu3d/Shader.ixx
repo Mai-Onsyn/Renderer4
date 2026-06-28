@@ -3,7 +3,9 @@ module;
 #include <algorithm>
 #include <bit>
 #include <immintrin.h>
-#include <memory>
+#include <map>
+#include <string>
+// #include <iostream>
 export module Shader;
 import Types;
 import ScreenVertex;
@@ -12,6 +14,7 @@ import Vectors;
 import Light;
 import Texture;
 import SIMD;
+import ShadowProcessor;
 
 export struct Uniform {
     const List<Light>& lights;
@@ -108,7 +111,7 @@ export namespace Shader {
      * 法向量已归一化
      * 输入已采样的UV UInt8颜色
      */
-    _m256_Result fragmentShader_avx2(const _m256_Fragment& fragment, const Texture* texture, const Uniform* uniform) {
+    _m256_Result fragmentShader_avx2(const _m256_Fragment& fragment, const Texture* texture, const Uniform* uniform, ShadowCollection* shadows, const Int32 count) {
         _m256_Result result;
         FColor Kd = texture ? FColor(texture->Kd) : FColor(0.8f, 0.8f, 0.8f);
         FColor Ka = texture ? FColor(texture->Ka) : FColor(0.8f, 0.8f, 0.8f);
@@ -130,6 +133,9 @@ export namespace Shader {
         alignas(32) Float stackSum_r[8];
         alignas(32) Float stackSum_g[8];
         alignas(32) Float stackSum_b[8];
+
+        alignas(32) Int32 stackShadowOffsets[8]{};
+        alignas(32) Float stackMapDepths[8]{};
 
         Vec8f inv255 = Vec8f(0.0039215686274509803921568627451f);   // 1/255
         Vec8f T_diff_r = Vec8f(
@@ -171,7 +177,7 @@ export namespace Shader {
             Vec8f L_dir_z = Vec8f(light.pos.z) - Vec8f(fragment.pZ);
             Vec8f distance = Vec8f::fma(L_dir_x, L_dir_x, Vec8f::fma(L_dir_y, L_dir_y, L_dir_z * L_dir_z)).sqrt();
             // Vec8f distance = (L_dir_x * L_dir_x + L_dir_y * L_dir_y + L_dir_z * L_dir_z).sqrt();
-            if (distance > light.range) continue;
+            // if (distance > light.range) continue;
 
             Vec8f invDistance = Vec8f(1) / distance;
             Vec8f L_x = L_dir_x * invDistance;
@@ -192,7 +198,9 @@ export namespace Shader {
             Vec8f I_light_b = light_decay * light.color.b;
 
             Vec8f nDotL = Vec8f::dot3D(L_x, L_y, L_z, fragment.nX, fragment.nY, fragment.nZ);
-            if (nDotL < 0.0f) continue;
+            if (nDotL < 0.0f) {
+                continue;
+            }
 
             Vec8f sqrtHalfLambert = nDotL * Vec8f(0.5f) + Vec8f(0.5f);
             Vec8f Diffuse_r = I_light_r * sqrtHalfLambert * sqrtHalfLambert;
@@ -203,7 +211,6 @@ export namespace Shader {
             Vec8f H_y_nn = L_y + stackVy;
             Vec8f H_z_nn = L_z + stackVz;
             Vec8f hLenInv = Vec8f::fma(H_x_nn, H_x_nn, Vec8f::fma(H_y_nn, H_y_nn, H_z_nn * H_z_nn)).invSqrt();
-            // Vec8f hLenInv = Vec8f(1) / (H_x_nn * H_x_nn + H_y_nn * H_y_nn + H_z_nn * H_z_nn).sqrt();
             Vec8f H_x = H_x_nn * hLenInv;
             Vec8f H_y = H_y_nn * hLenInv;
             Vec8f H_z = H_z_nn * hLenInv;
@@ -217,12 +224,46 @@ export namespace Shader {
             Vec8f Specular_g = I_light_g * pow_max_0_N_dot_H;
             Vec8f Specular_b = I_light_b * pow_max_0_N_dot_H;
 
-            Vec8f::fma(stackC_diff_r, Diffuse_r, Vec8f::fma(Specular_r, Ks.r, stackSum_r)).store(stackSum_r);
-            Vec8f::fma(stackC_diff_g, Diffuse_g, Vec8f::fma(Specular_g, Ks.g, stackSum_g)).store(stackSum_g);
-            Vec8f::fma(stackC_diff_b, Diffuse_b, Vec8f::fma(Specular_b, Ks.b, stackSum_b)).store(stackSum_b);
-            // (Vec8f(stackC_diff_r) * Diffuse_r + Specular_r * Ks.r + Vec8f(stackSum_r)).store(stackSum_r);
-            // (Vec8f(stackC_diff_g) * Diffuse_g + Specular_g * Ks.g + Vec8f(stackSum_g)).store(stackSum_g);
-            // (Vec8f(stackC_diff_b) * Diffuse_b + Specular_b * Ks.b + Vec8f(stackSum_b)).store(stackSum_b);
+            if (shadows->contains(light.name)) {
+                // 阴影
+                const auto& [map, size, matrix] = (*shadows)[light.name];
+                // 世界空间
+                Vec8f sx = fragment.pX;
+                Vec8f sy = fragment.pY;
+                Vec8f sz = fragment.pZ;
+                Vec8f w = 1.0f;
+                Vec8f::matrixMul(matrix, sx, sy, sz, w);
+                // 裁剪空间
+                w = w.inv();
+                sx *= w;
+                sy *= w;
+                sz *= w;
+                sz = Vec8f(1) - sz; // 深度
+                // ndc空间
+                sx = (sx * 0.5f + 0.5f).clamp(0, 1);  // [0, 1]的shadow map uv
+                sy = Vec8f(1) - (sy * 0.5f + 0.5f).clamp(0, 1);  // [0, 1]的shadow map uv
+                // shadow map uv映射
+                Vec8i x = static_cast<Vec8i>(sx * size).clamp(0, size - 1);
+                Vec8i y = static_cast<Vec8i>(sy * size).clamp(0, size - 1);
+                Vec8i shadowOffsets = y * size + x;
+                shadowOffsets.store(stackShadowOffsets);
+                for (UInt32 i = 0; i < count; i++) {
+                    const auto& shadowOffset = stackShadowOffsets[i];
+                    stackMapDepths[i] = map.get()[shadowOffset];
+                }
+                // Float bias = max(0.0005 * (1.0 - dot(normal, lightDir)), 0.00005);
+                Vec8f shadowDistances = Vec8f(stackMapDepths) * Vec8f(0.9f);
+                Vec8f cmp = shadowDistances.cmpBigger(sz);
+                Vec8f shadowMask = _mm256_blendv_ps(Vec8f(1), Vec8f(0.2), cmp);
+
+                (Vec8f::fma(stackC_diff_r, Diffuse_r, Vec8f::fma(Specular_r, Ks.r, stackSum_r)) * shadowMask).store(stackSum_r);
+                (Vec8f::fma(stackC_diff_g, Diffuse_g, Vec8f::fma(Specular_g, Ks.g, stackSum_g)) * shadowMask).store(stackSum_g);
+                (Vec8f::fma(stackC_diff_b, Diffuse_b, Vec8f::fma(Specular_b, Ks.b, stackSum_b)) * shadowMask).store(stackSum_b);
+            } else {
+                Vec8f::fma(stackC_diff_r, Diffuse_r, Vec8f::fma(Specular_r, Ks.r, stackSum_r)).store(stackSum_r);
+                Vec8f::fma(stackC_diff_g, Diffuse_g, Vec8f::fma(Specular_g, Ks.g, stackSum_g)).store(stackSum_g);
+                Vec8f::fma(stackC_diff_b, Diffuse_b, Vec8f::fma(Specular_b, Ks.b, stackSum_b)).store(stackSum_b);
+            }
         }
 
         storeColorVec(static_cast<Vec8i>(Vec8f(stackSum_r).clamp(0, 1) * 255.0f), result.r);

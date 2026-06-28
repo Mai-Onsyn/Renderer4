@@ -21,6 +21,8 @@ export struct Light {
     Float a = 0.000007f;
     Float b = 0.000003f;
 
+    // List<Float> shadowMap{};
+
     Light(const String &name, const Vector3D &pos, const Color &color, const LightType& type = LightType::Point)
         : name(name),
           pos(pos),

@@ -15,7 +15,12 @@ export struct Camera {
     Float fov;
     const Float near = 0.1;
 
-    Camera() : pos({0, 35, -8}), vx({1, 0, 0}), vy({0, 1, 0}), vz({0, 0, 1}), fov(70.0f) {}
+    Camera() : pos({0, 35, -8}), vx({1, 0, 0}), vy({0, 1, 0}), vz({0, 0, 1}), fov(70.0f) {
+        // this->vz = {0.19011, -0.77958, -0.59675};
+        // this->vx = this->up.cross(this->vz);
+        // this->vy = this->vz.cross(this->vx);
+        // this->pos = {-1.4, 42.5, -1.3};
+    }
 
     void moveX(const float distance) {
         pos += vx * distance;
@@ -72,8 +77,11 @@ export struct Camera {
 
     [[nodiscard]] Matrix4x4 getProjectionMatrix(const Float aspect) const {
         Matrix4x4 matrix;
-        matrix[0] = 1.0f / (aspect * std::tan(fov));
-        matrix[5] = 1.0f / std::tan(fov);
+
+        Float halfFov = fov * 3.1415926f / 360.0f;
+
+        matrix[0] = 1.0f / (aspect * std::tan(halfFov));
+        matrix[5] = 1.0f / std::tan(halfFov);
         matrix[10] = 1;
         matrix[11] = -near;
         matrix[14] = 1;

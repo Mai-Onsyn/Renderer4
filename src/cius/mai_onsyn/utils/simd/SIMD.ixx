@@ -63,6 +63,9 @@ public:
     // ~= 1 / sqrt(A)
     FORCE_INLINE Vec8f invSqrt() const { return _mm256_rsqrt_ps(val); }
 
+    FORCE_INLINE Vec8f cmpBigger(const Vec8f& o) const { return _mm256_cmp_ps(val, o.val, _CMP_GT_OS); }
+    FORCE_INLINE Vec8f cmpSmaller(const Vec8f& o) const { return _mm256_cmp_ps(val, o.val, _CMP_LT_OS); }
+
     FORCE_INLINE static Vec8f andNot(const Vec8f& a, const Vec8f& b) { return _mm256_andnot_ps(a.val, b.val); }
     FORCE_INLINE static Vec8f max(const Vec8f& a, const Vec8f& b) { return _mm256_max_ps(a.val, b.val); }
     FORCE_INLINE static Vec8f min(const Vec8f& a, const Vec8f& b) { return _mm256_min_ps(a.val, b.val); }
