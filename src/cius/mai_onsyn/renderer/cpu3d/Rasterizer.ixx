@@ -17,7 +17,7 @@ import Color;
 import ShadowProcessor;
 
 export namespace Rasterizer {
-    void drawTriangle(const ScreenTriangle& triangle, const Tile* tile, const FrameBuffer* screenBuffer, Float* depthBuffer, const Uniform* uniform) {
+    void drawTriangle(const ScreenTriangle& triangle, const Tile* tile, const FrameBuffer* screenBuffer, Float* depthBuffer, const Uniform* uniform, ShadowCollection* shadowMap) {
         // 复制顶点
         ScreenVertex v1 = triangle.v1;
         ScreenVertex v2 = triangle.v2;
@@ -79,7 +79,9 @@ export namespace Rasterizer {
 
                 Fragment fragment;
                 fragment.u = v1.uv.x * w1 + v2.uv.x * w2 + v3.uv.x * w3;
+                fragment.u = fragment.u - floor(fragment.u);
                 fragment.v = v1.uv.y * w1 + v2.uv.y * w2 + v3.uv.y * w3;
+                fragment.v = fragment.v - floor(fragment.v);
                 fragment.normal = v1.normal * w1 + v2.normal * w2 + v3.normal * w3;
                 fragment.worldPos = v1.worldPos * w1 + v2.worldPos * w2 + v3.worldPos * w3;
                 const auto [r, g, b, a] = Shader::fragmentShader_Sequence(fragment, triangle.texture, uniform);
@@ -160,22 +162,22 @@ export namespace Rasterizer {
 
                 Vec8f signMask = Vec8f(-0.0f);
                 Vec8f half = Vec8f(0.5f);
-                Vec8f sBPC = Vec8f::andNot(signMask, Vec8f::fms(PBx, PCy, PBy * PCx)) * half;
-                Vec8f sAPC = Vec8f::andNot(signMask, Vec8f::fms(PAx, PCy, PAy * PCx)) * half;
-                // Vec8f sBPC = Vec8f::andNot(signMask, PBx * PCy - PBy * PCx) * half;
-                // Vec8f sAPC = Vec8f::andNot(signMask, PAx * PCy - PAy * PCx) * half;
+                // Vec8f sBPC = Vec8f::andNot(signMask, Vec8f::fms(PBx, PCy, PBy * PCx)) * half;
+                // Vec8f sAPC = Vec8f::andNot(signMask, Vec8f::fms(PAx, PCy, PAy * PCx)) * half;
+                Vec8f sBPC = Vec8f::andNot(signMask, PBx * PCy - PBy * PCx) * half;
+                Vec8f sAPC = Vec8f::andNot(signMask, PAx * PCy - PAy * PCx) * half;
 
                 Vec8f invABC = Vec8f(sABC_inv);
                 Vec8f alphaS = sBPC * invABC;
                 Vec8f betaS = sAPC * invABC;
-                Vec8f gammaS = Vec8f(1.0f) - (alphaS + betaS);
+                Vec8f gammaS = Vec8f(1.0f) - alphaS - betaS;
 
-                Vec8f depth8f = Vec8f::fma(alphaS, v1.depth, Vec8f::fma(betaS, v2.depth, gammaS * v3.depth));
-                // Vec8f depth8f = Vec8f(v1.depth) * alphaS + Vec8f(v2.depth) * betaS + Vec8f(v3.depth) * gammaS;
+                // Vec8f depth8f = Vec8f::fma(alphaS, v1.depth, Vec8f::fma(betaS, v2.depth, gammaS * v3.depth));
+                Vec8f depth8f = Vec8f(v1.depth) * alphaS + Vec8f(v2.depth) * betaS + Vec8f(v3.depth) * gammaS;
 
                 // 批量深度剔除
                 __m256 rowDepth = _mm256_loadu_ps(&depthRow[x]);
-                __m256 cmp = _mm256_cmp_ps(depth8f, rowDepth, _CMP_GT_OQ);
+                __m256 cmp = _mm256_cmp_ps(depth8f, rowDepth, _CMP_GE_OQ);
                 Int32 mask = _mm256_movemask_ps(cmp);
                 if ((((1 << size) - 1) & mask) == 0) continue;
                 depth8f.store(depthStackBuffer);
@@ -191,14 +193,14 @@ export namespace Rasterizer {
                 Vec8f w3 = n3 * invSub;
 
                 // 法向量插值并归一化
-                Vec8f nx_nn = Vec8f::fma(w1, v1.normal.x, Vec8f::fma(w2, v2.normal.x, w3 * v3.normal.x));
-                Vec8f ny_nn = Vec8f::fma(w1, v1.normal.y, Vec8f::fma(w2, v2.normal.y, w3 * v3.normal.y));
-                Vec8f nz_nn = Vec8f::fma(w1, v1.normal.z, Vec8f::fma(w2, v2.normal.z, w3 * v3.normal.z));
-                // Vec8f nx_nn  = Vec8f(v1.normal.x) * w1 + Vec8f(v2.normal.x) * w2 + Vec8f(v3.normal.x) * w3;
-                // Vec8f ny_nn = Vec8f(v1.normal.y) * w1 + Vec8f(v2.normal.y) * w2 + Vec8f(v3.normal.y) * w3;
-                // Vec8f nz_nn = Vec8f(v1.normal.z) * w1 + Vec8f(v2.normal.z) * w2 + Vec8f(v3.normal.z) * w3;
-                Vec8f lenInv = Vec8f::fma(nx_nn, nx_nn, Vec8f::fma(ny_nn, ny_nn, nz_nn * nz_nn)).invSqrt();
-                // Vec8f lenInv = (nx_nn * nx_nn + ny_nn * ny_nn + nz_nn * nz_nn).invSqrt();
+                // Vec8f nx_nn = Vec8f::fma(w1, v1.normal.x, Vec8f::fma(w2, v2.normal.x, w3 * v3.normal.x));
+                // Vec8f ny_nn = Vec8f::fma(w1, v1.normal.y, Vec8f::fma(w2, v2.normal.y, w3 * v3.normal.y));
+                // Vec8f nz_nn = Vec8f::fma(w1, v1.normal.z, Vec8f::fma(w2, v2.normal.z, w3 * v3.normal.z));
+                Vec8f nx_nn = Vec8f(v1.normal.x) * w1 + Vec8f(v2.normal.x) * w2 + Vec8f(v3.normal.x) * w3;
+                Vec8f ny_nn = Vec8f(v1.normal.y) * w1 + Vec8f(v2.normal.y) * w2 + Vec8f(v3.normal.y) * w3;
+                Vec8f nz_nn = Vec8f(v1.normal.z) * w1 + Vec8f(v2.normal.z) * w2 + Vec8f(v3.normal.z) * w3;
+                // Vec8f lenInv = Vec8f::fma(nx_nn, nx_nn, Vec8f::fma(ny_nn, ny_nn, nz_nn * nz_nn)).invSqrt();
+                Vec8f lenInv = (nx_nn * nx_nn + ny_nn * ny_nn + nz_nn * nz_nn).invSqrt();
                 Vec8f nx = nx_nn * lenInv;
                 Vec8f ny = ny_nn * lenInv;
                 Vec8f nz = nz_nn * lenInv;
@@ -207,12 +209,12 @@ export namespace Rasterizer {
                 nz.store(fragment.nZ);
 
                 // 世界坐标插值
-                Vec8f worldX = Vec8f::fma(w1, v1.worldPos.x, Vec8f::fma(w2, v2.worldPos.x, w3 * v3.worldPos.x));
-                Vec8f worldY = Vec8f::fma(w1, v1.worldPos.y, Vec8f::fma(w2, v2.worldPos.y, w3 * v3.worldPos.y));
-                Vec8f worldZ = Vec8f::fma(w1, v1.worldPos.z, Vec8f::fma(w2, v2.worldPos.z, w3 * v3.worldPos.z));
-                // Vec8f worldX = Vec8f(v1.worldPos.x) * w1 + Vec8f(v2.worldPos.x) * w2 + Vec8f(v3.worldPos.x) * w3;
-                // Vec8f worldY = Vec8f(v1.worldPos.y) * w1 + Vec8f(v2.worldPos.y) * w2 + Vec8f(v3.worldPos.y) * w3;
-                // Vec8f worldZ = Vec8f(v1.worldPos.z) * w1 + Vec8f(v2.worldPos.z) * w2 + Vec8f(v3.worldPos.z) * w3;
+                // Vec8f worldX = Vec8f::fma(w1, v1.worldPos.x, Vec8f::fma(w2, v2.worldPos.x, w3 * v3.worldPos.x));
+                // Vec8f worldY = Vec8f::fma(w1, v1.worldPos.y, Vec8f::fma(w2, v2.worldPos.y, w3 * v3.worldPos.y));
+                // Vec8f worldZ = Vec8f::fma(w1, v1.worldPos.z, Vec8f::fma(w2, v2.worldPos.z, w3 * v3.worldPos.z));
+                Vec8f worldX = Vec8f(v1.worldPos.x) * w1 + Vec8f(v2.worldPos.x) * w2 + Vec8f(v3.worldPos.x) * w3;
+                Vec8f worldY = Vec8f(v1.worldPos.y) * w1 + Vec8f(v2.worldPos.y) * w2 + Vec8f(v3.worldPos.y) * w3;
+                Vec8f worldZ = Vec8f(v1.worldPos.z) * w1 + Vec8f(v2.worldPos.z) * w2 + Vec8f(v3.worldPos.z) * w3;
                 worldX.store(fragment.pX);
                 worldY.store(fragment.pY);
                 worldZ.store(fragment.pZ);

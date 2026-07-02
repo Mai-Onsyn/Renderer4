@@ -92,8 +92,8 @@ public:
         if constexpr (SHADOW_MAP) {
             const String& lightName = sceneSnapShot->lights[0].name;
             Camera lightCamera{};
-            // lightCamera.vz = {0.59577, -0.42050, 0.68427};
-            lightCamera.vz = {-0.26960,-0.76174,0.58912};
+            lightCamera.vz = {0.59577, -0.42050, 0.68427};
+            // lightCamera.vz = {-0.26960,-0.76174,0.58912};
             lightCamera.vx = lightCamera.up.cross(lightCamera.vz).normalize();
             lightCamera.vy = lightCamera.vz.cross(lightCamera.vx).normalize();
             lightCamera.pos = sceneSnapShot->lights[0].pos;
@@ -144,20 +144,20 @@ public:
 
         // 尝试写深度
         {
-            // Float* shadow = shadowMaps[lightName].map.get();
-            // UInt8* buffer = frameBuffer->getBuffer();
-            // Int32 idx = 0;
-            // for (Int32 y = 0; y < SHADOW_RESOLUTION; y++) {
-            //     Int32 row = y * width;
-            //     for (Int32 x = 0; x < SHADOW_RESOLUTION; x++) {
-            //         Int32 index = (row + x) << 2;
-            //         UInt8 gray = static_cast<UInt8>(shadow[idx++]);
-            //         buffer[index + 0] = gray;
-            //         buffer[index + 1] = gray;
-            //         buffer[index + 2] = gray;
-            //         buffer[index + 3] = 255;
-            //     }
-            // }
+            Float* shadow = shadowMaps[sceneSnapShot->lights[0].name].map.get();
+            UInt8* buffer = frameBuffer->getBuffer();
+            Int32 idx = 0;
+            for (Int32 y = 0; y < SHADOW_RESOLUTION; y++) {
+                Int32 row = y * width;
+                for (Int32 x = 0; x < SHADOW_RESOLUTION; x++) {
+                    Int32 index = (row + x) << 2;
+                    UInt8 gray = static_cast<UInt8>(shadow[idx++]);
+                    buffer[index + 0] = gray;
+                    buffer[index + 1] = gray;
+                    buffer[index + 2] = gray;
+                    buffer[index + 3] = 255;
+                }
+            }
         }
 
         Int64 textDrawStart = microTime();

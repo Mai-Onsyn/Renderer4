@@ -198,9 +198,9 @@ export namespace Shader {
             Vec8f I_light_b = light_decay * light.color.b;
 
             Vec8f nDotL = Vec8f::dot3D(L_x, L_y, L_z, fragment.nX, fragment.nY, fragment.nZ);
-            if (nDotL < 0.0f) {
-                continue;
-            }
+            // if (nDotL < 0.0f) {
+            //     continue;
+            // }
 
             Vec8f sqrtHalfLambert = nDotL * Vec8f(0.5f) + Vec8f(0.5f);
             Vec8f Diffuse_r = I_light_r * sqrtHalfLambert * sqrtHalfLambert;
@@ -253,8 +253,8 @@ export namespace Shader {
                     stackMapDepths[i] = map.get()[shadowOffset];
                 }
                 // Float bias = max(0.0005 * (1.0 - dot(normal, lightDir)), 0.00005);
-                Vec8f bias = (Vec8f(1) - nDotL) * 0.5;
-                Vec8f shadowDistances = Vec8f(stackMapDepths) + bias;
+                Vec8f bias = (Vec8f(1) - nDotL) * 2;
+                Vec8f shadowDistances = Vec8f(stackMapDepths) * 1.05;
                 Vec8f cmp = shadowDistances.cmpBigger(currentFragmentDepth);
                 Vec8f shadowMask = _mm256_blendv_ps(Vec8f(0.2), Vec8f(1), cmp);
 

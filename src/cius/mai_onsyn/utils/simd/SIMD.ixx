@@ -58,7 +58,12 @@ public:
     FORCE_INLINE Vec8f floor() const { return _mm256_floor_ps(val); }
 
     // ~= 1 / A
-    FORCE_INLINE Vec8f inv() const { return _mm256_rcp_ps(val); }
+    FORCE_INLINE Vec8f inv() const {
+        __m256 r = _mm256_rcp_ps(val);
+        __m256 t = _mm256_fnmadd_ps(val, r, _mm256_set1_ps(2.0f));
+        return _mm256_mul_ps(r, t);
+    }
+    // FORCE_INLINE Vec8f inv() const { return _mm256_div_ps(_mm256_set1_ps(1), this->val); }
 
     // ~= 1 / sqrt(A)
     FORCE_INLINE Vec8f invSqrt() const { return _mm256_rsqrt_ps(val); }
