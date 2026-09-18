@@ -20,8 +20,8 @@ public:
         Entity testEntity3{"Sponza Palace", move(mesh3), Transform{Matrix4x4::translate({0, 30, -8}) * Matrix4x4::rotate(3.1415 / 2, {0, 1, 0})}};
         this->addEntity(move(testEntity3));
 
-        Light sponzaPalaceLight{"Sponza Palace Light", {3.31365,47.65044,-19.08688}, {255, 255, 255, 255}};
-        // Light sponzaPalaceLight{"Sponza Palace Light", {-1.4, 42.5, -1.3}, {255, 255, 255, 255}};
+        // Light sponzaPalaceLight{"Sponza Palace Light", {3.31365,47.65044,-19.08688}, {255, 255, 255, 255}};
+        Light sponzaPalaceLight{"Sponza Palace Light", {-1.4, 42.5, -1.3}, {255, 255, 255, 255}};
         sponzaPalaceLight.a = 0.00007;
         sponzaPalaceLight.b = 0.00003;
         sponzaPalaceLight.intensity = 1.2;

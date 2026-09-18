@@ -119,6 +119,7 @@ public:
 
         // 顶点变换
         Int64 vertexTransformStart = microTime();
+        // const List<List<ScreenTriangle>>& screenTriangles = {SimpleVertexProcessor::process(sceneSnapShot)};
         const List<List<ScreenTriangle>>& screenTriangles = VertexProcessor::process(sceneSnapShot, executor, 20 * threadCount);
 
         // binning
@@ -144,20 +145,20 @@ public:
 
         // 尝试写深度
         {
-            Float* shadow = shadowMaps[sceneSnapShot->lights[0].name].map.get();
-            UInt8* buffer = frameBuffer->getBuffer();
-            Int32 idx = 0;
-            for (Int32 y = 0; y < SHADOW_RESOLUTION; y++) {
-                Int32 row = y * width;
-                for (Int32 x = 0; x < SHADOW_RESOLUTION; x++) {
-                    Int32 index = (row + x) << 2;
-                    UInt8 gray = static_cast<UInt8>(shadow[idx++]);
-                    buffer[index + 0] = gray;
-                    buffer[index + 1] = gray;
-                    buffer[index + 2] = gray;
-                    buffer[index + 3] = 255;
-                }
-            }
+            // Float* shadow = shadowMaps[sceneSnapShot->lights[0].name].map.get();
+            // UInt8* buffer = frameBuffer->getBuffer();
+            // Int32 idx = 0;
+            // for (Int32 y = 0; y < SHADOW_RESOLUTION; y++) {
+            //     Int32 row = y * width;
+            //     for (Int32 x = 0; x < SHADOW_RESOLUTION; x++) {
+            //         Int32 index = (row + x) << 2;
+            //         UInt8 gray = static_cast<UInt8>(shadow[idx++]);
+            //         buffer[index + 0] = gray;
+            //         buffer[index + 1] = gray;
+            //         buffer[index + 2] = gray;
+            //         buffer[index + 3] = 255;
+            //     }
+            // }
         }
 
         Int64 textDrawStart = microTime();

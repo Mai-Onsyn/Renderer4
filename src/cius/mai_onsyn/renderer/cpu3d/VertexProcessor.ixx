@@ -576,3 +576,169 @@ export namespace VertexProcessor {
         return result;
     }
 }
+
+export namespace SimpleVertexProcessor {
+    // 顶点属性线性插值
+    ClipVertex interpolate(const ClipVertex& v1, const ClipVertex& v2, Float t) {
+        return {
+            v1.pos * (1.0f - t) + v2.pos * t,
+            v1.normal * (1.0f - t) + v2.normal * t,
+            v1.uv * (1.0f - t) + v2.uv * t,
+            v1.worldPos * (1.0f - t) + v2.worldPos * t
+        };
+    }
+
+    // Sutherland-Hodgman 视锥体多边形裁剪 (6个平面)
+    void clipTriangle(const ClipVertex& v1, const ClipVertex& v2, const ClipVertex& v3, List<ClipVertex>& outVertices) {
+        List<ClipVertex> inList = { v1, v2, v3 };
+        List<ClipVertex> outList;
+
+        // 6个视锥体裁剪平面判规 lambda
+        auto clipAgainstPlane = [&](auto isInside, auto getIntersectT) {
+            outList.clear();
+            if (inList.empty()) return;
+
+            for (size_t i = 0; i < inList.size(); ++i) {
+                const ClipVertex& A = inList[i];
+                const ClipVertex& B = inList[(i + 1) % inList.size()];
+                Boolean Ain = isInside(A.pos);
+                Boolean Bin = isInside(B.pos);
+
+                if (Ain && Bin) {
+                    outList.push_back(B);
+                } else if (Ain) {
+                    Float t = getIntersectT(A.pos, B.pos);
+                    outList.push_back(interpolate(A, B, t));
+                } else if (Bin) {
+                    Float t = getIntersectT(A.pos, B.pos);
+                    outList.push_back(interpolate(A, B, t));
+                    outList.push_back(B);
+                }
+            }
+            inList = outList;
+        };
+
+        // 1. 近平面: z >= 0
+        clipAgainstPlane(
+            [](const Vector4D& p) { return p.z >= 0.0f; },
+            [](const Vector4D& a, const Vector4D& b) { return a.z / (a.z - b.z); }
+        );
+
+        // 2. 左平面: x >= -w
+        clipAgainstPlane(
+            [](const Vector4D& p) { return p.x >= -p.w; },
+            [](const Vector4D& a, const Vector4D& b) { return (-a.w - a.x) / ((b.x - a.x) + (b.w - a.w)); }
+        );
+
+        // 3. 右平面: x <= w
+        clipAgainstPlane(
+            [](const Vector4D& p) { return p.x <= p.w; },
+            [](const Vector4D& a, const Vector4D& b) { return (a.w - a.x) / ((b.x - a.x) - (b.w - a.w)); }
+        );
+
+        // 4. 下平面: y >= -w
+        clipAgainstPlane(
+            [](const Vector4D& p) { return p.y >= -p.w; },
+            [](const Vector4D& a, const Vector4D& b) { return (-a.w - a.y) / ((b.y - a.y) + (b.w - a.w)); }
+        );
+
+        // 5. 上平面: y <= w
+        clipAgainstPlane(
+            [](const Vector4D& p) { return p.y <= p.w; },
+            [](const Vector4D& a, const Vector4D& b) { return (a.w - a.y) / ((b.y - a.y) - (b.w - a.w)); }
+        );
+
+        outVertices = std::move(inList);
+    }
+
+    // 屏幕空间/NDC空间 逆时针背面剔除判断
+    Boolean isBackFace(const Vector4D& ndc1, const Vector4D& ndc2, const Vector4D& ndc3) {
+        return (ndc2.x - ndc1.x) * (ndc3.y - ndc1.y) - (ndc2.y - ndc1.y) * (ndc3.x - ndc1.x) >= 0.0f;
+    }
+
+    // 简化后的核心处理函数
+    List<ScreenTriangle> process(const Scene3DSnapShot* sceneSnapShot) {
+        List<ScreenTriangle> result;
+
+        const Matrix4x4 viewProjMatrix = sceneSnapShot->projectionMatrix * sceneSnapShot->viewMatrix;
+        const Float halfWidth = 0.5f * sceneSnapShot->screenWidth;
+        const Float halfHeight = 0.5f * sceneSnapShot->screenHeight;
+
+        // 遍历所有待渲染包
+        for (const auto& pkg : sceneSnapShot->renderPackages) {
+            const Matrix4x4 mvpMatrix = viewProjMatrix * pkg.modelMatrix;
+            const Matrix3x3 normalMatrix = static_cast<Matrix3x3>(pkg.modelMatrix).inverse().transpose();
+
+            // 1. 顶点着色 (Vertex Shader): 变换至 Clip 空间和世界空间
+            List<ClipVertex> clipVertices(pkg.vertexCount);
+            for (UInt32 i = 0; i < pkg.vertexCount; ++i) {
+                const Vertex& v = pkg.vertices[i];
+                Vector4D worldPos4 = pkg.modelMatrix * v.pos;
+
+                clipVertices[i] = ClipVertex{
+                    .pos = mvpMatrix * v.pos,
+                    .normal = normalMatrix * v.normal,
+                    .uv = v.uv,
+                    .worldPos = static_cast<Vector3D>(worldPos4)
+                };
+            }
+
+            // 2. 遍历图元进行 裁剪 -> NDC -> 剔除 -> 视口变换
+            List<ClipVertex> polygonVertices;
+            for (UInt32 i = 0; i < pkg.triangleCount; ++i) {
+                const Triangle& tri = pkg.triangles[i];
+                const ClipVertex& v1 = clipVertices[tri.v1];
+                const ClipVertex& v2 = clipVertices[tri.v2];
+                const ClipVertex& v3 = clipVertices[tri.v3];
+
+                // 视锥体裁剪
+                clipTriangle(v1, v2, v3, polygonVertices);
+                if (polygonVertices.size() < 3) continue;
+
+                // 裁剪后的多边形三角化 (Triangle Fan)
+                for (size_t t = 1; t < polygonVertices.size() - 1; ++t) {
+                    const ClipVertex* polyTri[3] = { &polygonVertices[0], &polygonVertices[t], &polygonVertices[t + 1] };
+
+                    Vector4D ndc[3];
+                    Float invW[3];
+
+                    // 3. 透视除法 (Perspective Division -> NDC)
+                    for (int k = 0; k < 3; ++k) {
+                        invW[k] = 1.0f / polyTri[k]->pos.w;
+                        ndc[k] = Vector4D{
+                            polyTri[k]->pos.x * invW[k],
+                            polyTri[k]->pos.y * invW[k],
+                            polyTri[k]->pos.z * invW[k],
+                            1.0f
+                        };
+                    }
+
+                    // 4. 背面剔除 (Backface Culling)
+                    if (isBackFace(ndc[0], ndc[1], ndc[2])) continue;
+
+                    // 5. 视口变换 (Viewport Transform) 并构建最终 ScreenTriangle
+                    ScreenVertex screenVerts[3];
+                    for (int k = 0; k < 3; ++k) {
+                        Int64 screenX = static_cast<Int64>((ndc[k].x + 1.0f) * halfWidth);
+                        Int64 screenY = static_cast<Int64>((1.0f - ndc[k].y) * halfHeight); // Y轴翻转
+
+                        screenVerts[k] = ScreenVertex{
+                            { screenX, screenY },
+                            1.0f - ndc[k].z,
+                            invW[k],
+                            polyTri[k]->normal,
+                            polyTri[k]->uv,
+                            polyTri[k]->worldPos
+                        };
+                    }
+
+                    result.push_back(ScreenTriangle{
+                        screenVerts[0], screenVerts[1], screenVerts[2], tri.texture
+                    });
+                }
+            }
+        }
+
+        return result;
+    }
+}
